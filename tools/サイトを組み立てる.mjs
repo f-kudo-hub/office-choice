@@ -103,7 +103,62 @@ const 下の帯 = `
   ${設定['AIが書いたことを明記する'] ? '<p class="small">この記事はAIが下書きしています。ご購入前には必ずメーカーの公式情報をご確認ください。</p>' : ''}
 </footer>`
 
-function ページ({ title, description, body, root, canonical }) {
+/**
+ * 構造化データ（JSON-LD）を作る。
+ *
+ * **2026年の検索は、人だけでなくAIが読む。**AI Overviews に引用されるかどうかで
+ * 流入が変わるため、記事の「何者か・いつ書いたか・どんな問いに答えているか」を
+ * 機械が読める形で置く。とくに FAQPage は、質問と答えの対応がそのまま伝わる。
+ *
+ * **本文に無いことを書かない。**タイトル・説明・FAQは、実際にページに出ている
+ * ものだけをそのまま入れる（構造化データだけ盛るのは、検索側のガイドライン違反）。
+ */
+function 構造化データ({ type, title, description, canonical, published, faq }) {
+  if (!canonical) return ''
+  const 物 = []
+
+  物.push({
+    '@context': 'https://schema.org',
+    '@type': type === '記事' ? 'BlogPosting' : 'WebSite',
+    headline: title,
+    description,
+    url: canonical,
+    inLanguage: 'ja',
+    ...(published ? { datePublished: published, dateModified: published } : {}),
+    ...(公開URL ? { isPartOf: { '@type': 'WebSite', name: サイト名, url: `${公開URL}/` } } : {}),
+  })
+
+  // FAQは「ページに実際に出ている質問と答え」だけ
+  if (Array.isArray(faq) && faq.length) {
+    物.push({
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: faq.map(f => ({
+        '@type': 'Question',
+        name: f.q ?? f.question ?? '',
+        acceptedAnswer: { '@type': 'Answer', text: f.a ?? f.answer ?? '' },
+      })).filter(x => x.name && x.acceptedAnswer.text),
+    })
+  }
+
+  if (type === '記事' && 公開URL) {
+    物.push({
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: サイト名, item: `${公開URL}/` },
+        { '@type': 'ListItem', position: 2, name: title, item: canonical },
+      ],
+    })
+  }
+
+  // </script> が本文に混ざるとHTMLが壊れるので必ず割る
+  return 物
+    .map(o => `<script type="application/ld+json">${JSON.stringify(o).replaceAll('</', '<\\/')}</script>`)
+    .join('\n')
+}
+
+function ページ({ title, description, body, root, canonical, type, published, faq }) {
   return `<!doctype html>
 <html lang="ja">
 <head>
@@ -114,7 +169,11 @@ function ページ({ title, description, body, root, canonical }) {
 ${canonical ? `<link rel="canonical" href="${e(canonical)}">` : ''}
 <meta property="og:title" content="${e(title)}">
 <meta property="og:description" content="${e(description)}">
-<meta property="og:type" content="article">
+<meta property="og:type" content="${type === '記事' ? 'article' : 'website'}">
+${canonical ? `<meta property="og:url" content="${e(canonical)}">` : ''}
+<meta property="og:site_name" content="${e(サイト名)}">
+<meta name="twitter:card" content="summary">
+${構造化データ({ type, title, description, canonical, published, faq })}
 <link rel="stylesheet" href="${root}style.css">
 </head>
 <body>
@@ -211,7 +270,10 @@ function 記事ページ(k) {
     description: k.description,
     body,
     root: '../',
-    canonical: 公開URL ? `${公開URL}/kiji/${k.slug}.html` : ''
+    canonical: 公開URL ? `${公開URL}/kiji/${k.slug}.html` : '',
+    type: '記事',
+    published: k.published,
+    faq: k.faq,
   })
 }
 

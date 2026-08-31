@@ -70,12 +70,14 @@ jobs:
         if: always()
         run: node "tools/サイトを組み立てる.mjs"
 
+      # **公開してから知らせる。**先に知らせても、検索側が見に来たとき
+      # まだ新しいページが無い（鍵ファイルも読めない）ので意味がない。
       - name: 公開する
         if: always()
         run: |
           git config user.name  "毎週の記事投稿"
           git config user.email "noreply@github.com"
-          git add 記事 docs
+          git add 記事 docs データ
           if git diff --cached --quiet; then
             echo "変化なし。公開しません。"
             exit 0
@@ -87,3 +89,11 @@ jobs:
             echo "送信に失敗。${i}回目の待機。"; sleep $((2 ** i))
           done
           exit 1
+
+      # 公開が終わってから、検索エンジンに「見に来て」と伝える。
+      # Bing / Yandex 向け（Googleは非対応。Google向けは Search Console が要る）。
+      # **失敗しても記事の公開は取り消さない。**知らせの失敗で投稿をなかったことにしない。
+      - name: 検索エンジンに知らせる（IndexNow）
+        if: always()
+        continue-on-error: true
+        run: node "tools/検索エンジンに知らせる.mjs"
