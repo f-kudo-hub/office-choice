@@ -58,7 +58,8 @@ const 記事の形 = {
     lead: { type: 'string', description: '冒頭の導入。3〜5文。「この記事を読むと何が決まるか」を先に言う' },
     sections: {
       type: 'array',
-      minItems: 4,
+      description: '本文の節。**必ず4〜7個**作る。',
+      minItems: 1,
       maxItems: 7,
       items: {
         type: 'object',
@@ -75,7 +76,8 @@ const 記事の形 = {
     },
     products: {
       type: 'array',
-      minItems: 2,
+      description: 'おすすめの分類。**必ず2〜4個**作る。',
+      minItems: 1,
       maxItems: 4,
       items: {
         type: 'object',
@@ -91,7 +93,8 @@ const 記事の形 = {
     },
     faq: {
       type: 'array',
-      minItems: 2,
+      description: 'よくある質問。**必ず2〜4個**作る。',
+      minItems: 1,
       maxItems: 4,
       items: {
         type: 'object',
@@ -105,11 +108,12 @@ const 記事の形 = {
     },
     checklist: {
       type: 'array',
-      minItems: 3,
+      description: '買う前に確かめること。**必ず3〜6個**作る。',
+      minItems: 1,
       maxItems: 6,
       items: { type: 'string', description: '買う前に確かめる1行。20〜40文字' }
     },
-    tags: { type: 'array', minItems: 2, maxItems: 5, items: { type: 'string' } }
+    tags: { type: 'array', description: '記事のタグ。**必ず2〜5個**作る。', minItems: 1, maxItems: 5, items: { type: 'string' } }
   }
 }
 
