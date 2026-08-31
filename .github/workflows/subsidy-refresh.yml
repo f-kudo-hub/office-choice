@@ -1,0 +1,60 @@
+# 補助金カレンダーの更新（月額会員 ¥2,980 の中身）
+#
+# 毎朝、デジタル庁「Jグランツ」の公開APIから受付中の補助金を取り直し、
+# 締切カレンダーを作り直してコミットします。
+#
+# **APIキーは要りません。**認証なしで読める公開APIなので、
+# 毎週の記事投稿と違って秘密の設定は不要です。
+#
+# なぜ毎日か：締切は日ごとに減ります。「7日以内に締切」を売りにする以上、
+# 週1回だと最大6日ぶん古い数字を会員に見せることになります。
+#
+# ⚠️ 識別子は英字にしてあります。inputs 等に日本語を使うと
+#    GitHubがワークフロー全体を読めなくなります（2026-08-31 に実害あり）。
+#
+# 手で試すとき：Actions タブ → 補助金カレンダーの更新 → Run workflow
+
+name: 補助金カレンダーの更新
+
+on:
+  schedule:
+    # UTC 21:00 ＝ 日本時間 翌朝6:00
+    - cron: "0 21 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: subsidy-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: 作業場を取り出す
+        uses: actions/checkout@v4
+
+      - name: Node を用意する
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: 補助金を集め直す
+        run: node tools/補助金を集める.mjs
+
+      - name: 変わっていたらコミットする
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add データ/
+          # 中身が同じ日は何もしない（空コミットを積み上げない）
+          if git diff --staged --quiet; then
+            echo "変わりなし。コミットしません"
+          else
+            git commit -m "補助金カレンダーの更新：$(TZ=Asia/Tokyo date +%Y-%m-%d)"
+            git push
+          fi
