@@ -528,6 +528,8 @@ ${引用の節}
   <p class="lead">デジタル庁「Jグランツ」の公開データから、
   <strong>中小企業の設備投資・IT導入・販路拡大・職場環境の改善</strong>に使える補助金だけを抜き出しました。
   1件ずつのページに、自己負担の目安と、締切から逆算した段取りをまとめています。</p>
+  <p class="lead-in-mini"><a href="checker.html"><strong>▸ 都道府県とやりたいことから探す（補助金チェッカー）</strong></a><br>
+  <span class="small">100件を上から読まなくて済みます。登録不要。</span></p>
   <p class="note">このページは毎朝作り直しています。写しは持ちません。
   金額の「未公表」は、公式データが0を返したものです。<strong>0円という意味ではありません。</strong>
   条件は必ず各制度の公式ページでご確認ください。</p>
@@ -558,6 +560,128 @@ ${引用の節}
 </article>
 <p class="back"><a href="../index.html">← 記事の一覧にもどる</a></p>
 `
+
+  // ── 探す道具（クリックで絞り込める1枚）────────────────────────
+  //
+  // **道具は、記事と違って人に紹介される。**「これ便利」で貼られたリンクが、
+  // いちばん足りていない被リンクになる。読者は補助金ページと同じ人なので、
+  // 器を増やしたことにはならない（[[07_束ねない]]の原則に反しない）。
+  //
+  // **残り日数はここで焼き付けない。**見た人の端末で、その日の日付から数える。
+  // 焼き付けると、キャッシュされたページが「あと30日」と言い続ける。
+  const 探す用のデータ = 受付中.map(k => ({
+    名: k.名称,
+    地: k.地域,
+    用: k.効く用途,
+    締: k.締切,
+    上: k.上限額,
+    先: `${slug(k)}.html`,
+  }))
+  // **別ファイルにして読みに行かせない。**23KBしかないので、ページに直接埋める。
+  // 読みに行く形にすると、そちらが404になった日に画面が黙って空になる。
+  // 埋めてあれば、ページが出た時点で必ず動く（回線が細くても、追加の通信が0）。
+  const 埋め込むデータ = JSON.stringify(探す用のデータ).replaceAll('</', '<\/')
+
+  const 全用途 = [...new Set(受付中.flatMap(k => k.効く用途))]
+  const 全地域 = [...new Set(受付中.map(k => k.地域))].sort((a, b) => (b === '全国') - (a === '全国') || a.localeCompare(b, 'ja'))
+
+  const 探すbody = `
+<article>
+  <h1>うちの会社が今つかえる補助金チェッカー</h1>
+  <p class="lead">都道府県と、やりたいことを選ぶだけ。<strong>いま受付中の制度と、締切までの残り日数</strong>が出ます。
+  登録も入力も要りません。</p>
+  <p class="note">出典：デジタル庁「Jグランツ」公開データ（毎朝更新）。
+  残り日数は、ご覧になっている端末の日付から数えています。
+  金額の「未公表」は公式データが0を返したもので、<strong>0円という意味ではありません。</strong>
+  条件は必ず各制度の公式ページでご確認ください。</p>
+
+  <div class="pick">
+    <label>都道府県
+      <select id="ken"><option value="">すべて</option>${全地域.map(g => `<option>${e(g)}</option>`).join('')}</select>
+    </label>
+    <label>やりたいこと
+      <select id="yoto"><option value="">すべて</option>${全用途.map(u => `<option>${e(u)}</option>`).join('')}</select>
+    </label>
+    <label>締切まで
+      <select id="nokori">
+        <option value="">いつでも</option>
+        <option value="7">7日以内</option>
+        <option value="30">30日以内</option>
+        <option value="90">90日以内</option>
+      </select>
+    </label>
+  </div>
+
+  <p id="kensu" class="meta"></p>
+  <div id="kekka"><p>読み込み中です…</p></div>
+</article>
+<script type="application/json" id="hojo-data">${埋め込むデータ}</script>
+<p class="back"><a href="index.html">← 補助金の締切一覧</a>　<a href="../index.html">記事の一覧</a></p>
+
+<script>
+(function () {
+  var 全部 = []
+  var 円 = function (n) { return '¥' + Number(n).toLocaleString('ja-JP') }
+
+  // その日の0時を基準に数える。時刻で数えると、同じ日でも人によって1日ずれる
+  function 残り(締切) {
+    var 今日 = new Date()
+    今日.setHours(0, 0, 0, 0)
+    return Math.round((new Date(締切 + 'T00:00:00') - 今日) / 86400000)
+  }
+
+  function 出す() {
+    var ken = document.getElementById('ken').value
+    var yoto = document.getElementById('yoto').value
+    var nokori = document.getElementById('nokori').value
+
+    var 該当 = 全部.filter(function (x) {
+      // 都道府県を選んだときは、全国のものも一緒に出す。**その県の人が使えるものだから**
+      if (ken && x.地 !== ken && x.地 !== '全国') return false
+      if (yoto && x.用.indexOf(yoto) < 0) return false
+      var d = 残り(x.締)
+      if (d < 0) return false
+      if (nokori && d > Number(nokori)) return false
+      return true
+    })
+
+    document.getElementById('kensu').textContent = 該当.length + '件が見つかりました'
+    document.getElementById('kekka').innerHTML = 該当.length
+      ? 該当.map(function (x) {
+          var d = 残り(x.締)
+          return '<div class="hit' + (d <= 7 ? ' soon' : '') + '">' +
+            '<p class="date">' + x.締 + '・あと' + d + '日' + (d <= 7 ? '（まもなく締切）' : '') + '</p>' +
+            '<h2><a href="' + x.先 + '">' + x.名 + '</a></h2>' +
+            '<p class="tags">' + x.用.map(function (u) { return '<span class="tag">' + u + '</span>' }).join('') +
+            '<span class="tag">' + x.地 + '</span></p>' +
+            '<p class="price">上限額：' + (x.上 > 0 ? 円(x.上) : '未公表') + '</p>' +
+            '</div>'
+        }).join('')
+      : '<p>この条件に当てはまる制度は、いま受付中のものにはありませんでした。' +
+        '条件をゆるめるか、<a href="index.html">締切一覧</a>をご覧ください。</p>'
+  }
+
+  全部 = JSON.parse(document.getElementById('hojo-data').textContent)
+  ;['ken', 'yoto', 'nokori'].forEach(function (id) {
+    document.getElementById(id).addEventListener('change', 出す)
+  })
+  出す()
+})()
+</script>
+`
+
+  writeFileSync(
+    join(出し先, 'checker.html'),
+    ページ({
+      title: 'うちの会社が今つかえる補助金チェッカー',
+      description: '都道府県とやりたいことを選ぶだけで、いま受付中の補助金と締切までの残り日数が分かります。登録不要・無料。デジタル庁の公開データから毎朝更新。',
+      body: 探すbody,
+      root: '../',
+      canonical: 公開URL ? `${公開URL}/hojo/checker.html` : '',
+    }),
+    'utf8',
+  )
+  if (公開URL) サイトマップ.unshift(`${公開URL}/hojo/checker.html`)
 
   const 一覧canonical = 公開URL ? `${公開URL}/hojo/` : ''
   writeFileSync(

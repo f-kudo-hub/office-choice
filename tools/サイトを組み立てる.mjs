@@ -289,6 +289,7 @@ const 補助金への案内 = 受付中 =>
     ? `<section class="lead-in">
   <h2><a href="hojo/index.html">いま受付中の補助金の締切一覧（${受付中}件）</a></h2>
   <p>デジタル庁「Jグランツ」の公開データから、中小企業の設備投資・IT導入・販路拡大・職場環境の改善に使えるものだけを抜き出しています。1件ずつのページに、<strong>自己負担の目安</strong>と、<strong>締切から逆算した段取り</strong>をまとめました。毎朝更新しています。</p>
+  <p><a href="hojo/checker.html"><strong>▸ 都道府県とやりたいことから探す（補助金チェッカー・登録不要）</strong></a></p>
 </section>`
     : ''
 
@@ -437,6 +438,22 @@ blockquote p{margin:0}
 .lead-in h2{border:0;padding-top:0;margin:0 0 .4rem;font-size:1.1rem}
 .lead-in h2 a{text-decoration:none}
 .lead-in p{margin:0;font-size:.9rem}
+.lead-in-mini{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:6px;padding:.7rem .9rem;font-size:.95rem}
+.lead-in-mini a{text-decoration:none}
+
+/* ── 探す道具 ─────────────────────────────────────────────── */
+.pick{display:flex;flex-wrap:wrap;gap:.8rem;margin:1.6rem 0}
+.pick label{display:flex;flex-direction:column;gap:.25rem;font-size:.82rem;color:var(--sub);flex:1 1 10rem;min-width:0}
+/* **入力欄は16px以上。**これより小さいとiPhoneが勝手に画面を拡大する */
+.pick select{font-size:16px;padding:.5rem .6rem;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);width:100%}
+.hit{border:1px solid var(--line);border-radius:8px;padding:.8rem 1rem;margin:.8rem 0;background:var(--card)}
+.hit.soon{border-left:3px solid #c0392b}
+.hit h2{border:0;padding-top:0;margin:.2rem 0 .4rem;font-size:1.05rem}
+.hit h2 a{color:var(--ink);text-decoration:none}
+.hit h2 a:hover{color:var(--accent)}
+.hit .date{color:var(--sub);font-size:.82rem;margin:0}
+.hit .price{margin:.3rem 0 0;font-size:.85rem}
+.hit .tags{margin:.3rem 0}
 `
 
 // ── 書き出し ──────────────────────────────────────────────────────
