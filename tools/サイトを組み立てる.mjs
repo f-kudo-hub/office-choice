@@ -383,8 +383,37 @@ li{margin:.3rem 0}
 `
 
 // ── 書き出し ──────────────────────────────────────────────────────
+//
+// **消してはいけないファイルを、消す前に手元に退避する。**
+//
+// docs/ は毎回まるごと作り直す（差分で足すと、設定を変えたときに古い記事だけ
+// 古いまま残るため）。だが次の2つは、こちらが作るものではないのに
+// **消えると外の仕組みが壊れる。**
+//
+//   ・google〇〇.html … Google Search Console の所有確認ファイル。
+//     Googleは「確認後も削除しないでください」と明記している。消すと確認が外れ、
+//     検索順位のデータも sitemap の送信も止まる
+//   ・〇〇.txt（IndexNowの鍵）… 消えると検証が通らず、通知が403で弾かれる
+//
+// **2026-08-31、実際にこれで消える寸前だった。**気づかず週次が走っていたら、
+// Googleの確認が外れたことに誰も気づけない（画面には何も出ない）。
+const 守るファイル = []
+if (existsSync(公開先)) {
+  for (const f of readdirSync(公開先)) {
+    // Googleの所有確認ファイル と IndexNowの鍵（32桁の英数字.txt）
+    if (/^google[0-9a-f]+\.html$/i.test(f) || /^[0-9a-f]{16,64}\.txt$/i.test(f)) {
+      守るファイル.push({ 名前: f, 中身: readFileSync(join(公開先, f)) })
+    }
+  }
+}
+
 rmSync(公開先, { recursive: true, force: true })
 mkdirSync(join(公開先, 'kiji'), { recursive: true })
+
+for (const f of 守るファイル) {
+  writeFileSync(join(公開先, f.名前), f.中身)
+  console.log(`残しました：${f.名前}（消すと外の仕組みが壊れるため）`)
+}
 
 writeFileSync(join(公開先, '.nojekyll'), '', 'utf8')
 writeFileSync(join(公開先, 'style.css'), CSS, 'utf8')
