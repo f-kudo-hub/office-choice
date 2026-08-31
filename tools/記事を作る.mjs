@@ -1,4 +1,9 @@
 /**
+//
+// ⚠️ 構造化出力のスキーマで使えない書き方（2026-08-31 に2回つまずいた）
+//    ・配列の maxItems は使えない（400 になる）
+//    ・配列の minItems は 0 か 1 しか使えない
+//    本数は description に日本語で書く。実際に本数を決めているのはそちら。
  * 記事を1本、自動で書く
  *
  * **何をするか。**
@@ -60,7 +65,6 @@ const 記事の形 = {
       type: 'array',
       description: '本文の節。**必ず4〜7個**作る。',
       minItems: 1,
-      maxItems: 7,
       items: {
         type: 'object',
         additionalProperties: false,
@@ -78,7 +82,6 @@ const 記事の形 = {
       type: 'array',
       description: 'おすすめの分類。**必ず2〜4個**作る。',
       minItems: 1,
-      maxItems: 4,
       items: {
         type: 'object',
         additionalProperties: false,
@@ -95,7 +98,6 @@ const 記事の形 = {
       type: 'array',
       description: 'よくある質問。**必ず2〜4個**作る。',
       minItems: 1,
-      maxItems: 4,
       items: {
         type: 'object',
         additionalProperties: false,
@@ -110,10 +112,9 @@ const 記事の形 = {
       type: 'array',
       description: '買う前に確かめること。**必ず3〜6個**作る。',
       minItems: 1,
-      maxItems: 6,
       items: { type: 'string', description: '買う前に確かめる1行。20〜40文字' }
     },
-    tags: { type: 'array', description: '記事のタグ。**必ず2〜5個**作る。', minItems: 1, maxItems: 5, items: { type: 'string' } }
+    tags: { type: 'array', description: '記事のタグ。**必ず2〜5個**作る。', minItems: 1, items: { type: 'string' } }
   }
 }
 
