@@ -70,9 +70,17 @@ const 記事一覧 = readdirSync(記事置き場)
   .sort((a, b) => String(b.published ?? '').localeCompare(String(a.published ?? '')) || String(a.slug).localeCompare(String(b.slug)))
 
 // ── ひな型 ────────────────────────────────────────────────────────
-const 広告の1行 = アフィリ有効
-  ? '<p class="ad-notice">この記事には広告（Amazonアソシエイトのリンク）が含まれます。</p>'
-  : '<p class="ad-notice">この記事の商品リンクはAmazonの検索結果へのリンクです（現在、アフィリエイトの提携はありません）。</p>'
+/**
+ * 広告の1行は、**その記事に実際にAmazonリンクがあるときだけ**Amazonの話をする。
+ * サービスだけの記事に「商品リンクはAmazonの…」と書くと、実態と違う表示になる（景品表示法）。
+ */
+const 広告の1行を作る = 記事 => {
+  const 物がある = (記事.products ?? []).some(p => (p.amazon_keyword ?? '').trim())
+  if (!物がある) return '<p class="ad-notice">この記事で紹介しているのは、申し込む形のサービスです。現在、アフィリエイトの提携はありません。</p>'
+  return アフィリ有効
+    ? '<p class="ad-notice">この記事には広告（Amazonアソシエイトのリンク）が含まれます。</p>'
+    : '<p class="ad-notice">この記事の商品リンクはAmazonの検索結果へのリンクです（現在、アフィリエイトの提携はありません）。</p>'
+}
 
 const 下の帯 = `
 <footer class="foot">
@@ -122,7 +130,9 @@ function 記事ページ(k) {
   <h3>${e(p.name)}</h3>
   <p class="price">目安：${e(p.price_range)}</p>
   <p>${e(p.why)}</p>
-  <p><a class="btn" href="${e(Amazonリンク(p.amazon_keyword))}" target="_blank" rel="nofollow sponsored noopener">Amazonで「${e(p.amazon_keyword)}」を見る</a></p>
+  ${(p.amazon_keyword ?? '').trim()
+    ? `<p><a class="btn" href="${e(Amazonリンク(p.amazon_keyword))}" target="_blank" rel="nofollow sponsored noopener">Amazonで「${e(p.amazon_keyword)}」を見る</a></p>`
+    : `<p class="note">これは申し込む形のサービスです。提携が決まりしだい、ここに申込先を載せます。</p>`}
 </div>`
     )
     .join('\n')
@@ -134,7 +144,7 @@ function 記事ページ(k) {
 <article>
   <h1>${e(k.title)}</h1>
   <p class="meta">${e(k.published)}　${k.tags.map(t => `<span class="tag">${e(t)}</span>`).join('')}</p>
-  ${広告の1行}
+  ${広告の1行を作る(k)}
   <p class="lead">${e(k.lead)}</p>
 
   <nav class="toc"><p class="toc-title">この記事の中身</p><ol>${目次}</ol></nav>
