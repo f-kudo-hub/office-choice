@@ -20,6 +20,7 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync, rmSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
+import { 補助金ページ一式を作る } from './補助金のページを作る.mjs'
 
 const ここ = dirname(fileURLToPath(import.meta.url))
 const 作業場 = join(ここ, '..')
@@ -278,7 +279,20 @@ function 記事ページ(k) {
 }
 
 // ── 一覧ページ ────────────────────────────────────────────────────
-function 一覧ページ() {
+/**
+ * 補助金の締切一覧への案内。
+ * **トップから1クリックで行けないページは、無いのと同じです。**
+ * 検索から直接ページに来た人にも、サイト全体で何をやっているかが伝わるように置きます。
+ */
+const 補助金への案内 = 受付中 =>
+  受付中
+    ? `<section class="lead-in">
+  <h2><a href="hojo/index.html">いま受付中の補助金の締切一覧（${受付中}件）</a></h2>
+  <p>デジタル庁「Jグランツ」の公開データから、中小企業の設備投資・IT導入・販路拡大・職場環境の改善に使えるものだけを抜き出しています。1件ずつのページに、<strong>自己負担の目安</strong>と、<strong>締切から逆算した段取り</strong>をまとめました。毎朝更新しています。</p>
+</section>`
+    : ''
+
+function 一覧ページ(補助金の受付中) {
   const 中身 = 記事一覧.length
     ? 記事一覧
         .map(
@@ -295,7 +309,7 @@ function 一覧ページ() {
   return ページ({
     title: `${サイト名}｜${設定.サイトの説明}`,
     description: 設定.サイトの説明,
-    body: `<h1 class="sr">記事の一覧</h1>\n<ul class="cards">\n${中身}\n</ul>`,
+    body: `<h1 class="sr">記事の一覧</h1>\n${補助金への案内(補助金の受付中)}\n<ul class="cards">\n${中身}\n</ul>`,
     root: './',
     canonical: 公開URL ? `${公開URL}/` : ''
   })
@@ -380,6 +394,49 @@ li{margin:.3rem 0}
 .foot{max-width:44rem;margin:0 auto;padding:1.6rem 1.2rem 3rem;border-top:1px solid var(--line);color:var(--sub);font-size:.84rem}
 .foot p{margin:.3rem 0}
 .small{font-size:.78rem}
+
+/* ── 補助金のページ ───────────────────────────────────────── */
+.crumb{font-size:.84rem;color:var(--sub);margin:1.4rem 0 0}
+.note{font-size:.86rem;color:var(--sub)}
+.spec{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.92rem}
+.spec th,.spec td{border:1px solid var(--line);padding:.55rem .7rem;text-align:left;vertical-align:top}
+.spec th{background:var(--card);color:var(--sub);font-weight:600;width:11rem}
+/* **狭い画面では、見出しと中身を上下に積む。**
+   390pxで2列のまま出すと、見出しの幅が縮んで「実施機関」が
+   実／施／機／関 と1文字ずつ縦に割れる（日本語は語の途中でも改行されるため）。
+   幅を auto にするだけでは直らない。列をやめて積むのが確実。 */
+@media (max-width:560px){
+  .spec{font-size:.88rem}
+  .spec:not(.list),.spec:not(.list) tbody,.spec:not(.list) tr,.spec:not(.list) th,.spec:not(.list) td{display:block;width:auto}
+  .spec:not(.list) tr{border:1px solid var(--line);border-radius:8px;margin:.6rem 0;padding:.5rem .8rem;background:var(--card)}
+  .spec:not(.list) th{border:0;padding:0;font-size:.78rem;white-space:nowrap;background:none}
+  .spec:not(.list) td{border:0;padding:.1rem 0 .1rem;background:var(--bg)}
+}
+.spec.list th{width:auto}
+.spec.list td:first-child{white-space:nowrap;width:6.5rem}
+/* **3列の表は、狭い画面ではカードにする。**390pxで3列のまま出すと
+   制度名が1文字ずつ折れて読めなくなる。横スクロールには逃がさない */
+@media (max-width:560px){
+  .spec.list,.spec.list tbody,.spec.list tr,.spec.list td{display:block;width:auto}
+  .spec.list tr:first-child{display:none}
+  .spec.list tr{border:1px solid var(--line);border-radius:8px;margin:.7rem 0;padding:.6rem .8rem;background:var(--card)}
+  .spec.list td{border:0;padding:.15rem 0}
+  .spec.list td:first-child{white-space:normal;width:auto;color:var(--sub);font-size:.84rem}
+  /* 改行をやめる代わりに中黒で区切る。「2026-09-07あと7日」と続けて読ませない */
+  .spec.list td:first-child br{display:none}
+  .spec.list td:first-child .small::before{content:"・"}
+  .spec.list td:nth-child(2){font-size:.95rem;margin:.2rem 0}
+  .spec.list td:last-child{color:var(--sub);font-size:.84rem}
+}
+.closed{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--sub);padding:.8rem 1rem;margin:1.2rem 0;font-size:.92rem}
+.urgent{background:var(--card);border:1px solid var(--line);border-left:3px solid #c0392b;padding:.8rem 1rem;margin:1.2rem 0;font-size:.95rem}
+.ok{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);padding:.8rem 1rem;margin:1.2rem 0;font-size:.95rem}
+blockquote{margin:1rem 0;padding:.2rem 0 .2rem 1rem;border-left:3px solid var(--line);color:var(--sub)}
+blockquote p{margin:0}
+.lead-in{border:1px solid var(--line);border-radius:8px;background:var(--card);padding:1rem 1.2rem;margin:1.8rem 0 0}
+.lead-in h2{border:0;padding-top:0;margin:0 0 .4rem;font-size:1.1rem}
+.lead-in h2 a{text-decoration:none}
+.lead-in p{margin:0;font-size:.9rem}
 `
 
 // ── 書き出し ──────────────────────────────────────────────────────
@@ -417,9 +474,15 @@ for (const f of 守るファイル) {
 
 writeFileSync(join(公開先, '.nojekyll'), '', 'utf8')
 writeFileSync(join(公開先, 'style.css'), CSS, 'utf8')
-writeFileSync(join(公開先, 'index.html'), 一覧ページ(), 'utf8')
 writeFileSync(join(公開先, 'disclosure.html'), 開示ページ(), 'utf8')
 for (const k of 記事一覧) writeFileSync(join(公開先, 'kiji', `${k.slug}.html`), 記事ページ(k), 'utf8')
+
+// ── 補助金のページ（ロングテール集客の本体）────────────────────
+// 記事より先に作る。トップの案内に「受付中◯件」と出すのに件数が要るため。
+const 今日 = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10)
+const 補助金 = 補助金ページ一式を作る({ 作業場, 公開先, ページ, e, 提携先, 公開URL, 今日 })
+
+writeFileSync(join(公開先, 'index.html'), 一覧ページ(補助金.受付中 ?? 0), 'utf8')
 
 // サイトマップとrobots（公開URLが分かっているときだけ）
 if (公開URL) {
@@ -427,7 +490,9 @@ if (公開URL) {
   const 中身 = [
     url(`${公開URL}/`),
     url(`${公開URL}/disclosure.html`),
-    ...記事一覧.map(k => url(`${公開URL}/kiji/${k.slug}.html`, k.published))
+    ...記事一覧.map(k => url(`${公開URL}/kiji/${k.slug}.html`, k.published)),
+    // **受付が終わったものはここに入れない。**古い情報で人を呼ばない
+    ...(補助金.サイトマップ ?? []).map(loc => url(loc, 今日)),
   ].join('\n')
   writeFileSync(
     join(公開先, 'sitemap.xml'),
