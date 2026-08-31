@@ -26,7 +26,7 @@
  *
  * 使い方： node tools/補助金を集める.mjs
  */
-import { writeFileSync, mkdirSync, existsSync } from 'node:fs'
+import { writeFileSync, readFileSync, mkdirSync, existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 
@@ -79,6 +79,19 @@ function 残り日数(締切, 今日) {
 
 const 今日 = 日付(new Date().toISOString())
 
+/**
+ * **「いつ初めて見つけたか」だけは引き継ぐ。**
+ * これが無いと「今月あたらしく出た補助金」を出せない。会員に毎月お届けする中身の要。
+ * 引き継ぐのは日付1つだけで、金額や締切は引き継がない（あちらが直したら、こちらも直る）。
+ */
+const 前の見つけた日 = new Map()
+try {
+  const 前 = JSON.parse(readFileSync(join(出し先, '補助金_最新.json'), 'utf8'))
+  for (const r of 前.補助金 ?? []) if (r.id && r.見つけた日) 前の見つけた日.set(r.id, r.見つけた日)
+} catch {
+  // 初回は前のファイルが無い。全部を「今日みつけた」として扱う
+}
+
 const 集めた = new Map()
 const 語ごと = []
 for (const w of 検索語) {
@@ -98,7 +111,7 @@ for (const w of 検索語) {
           対象地域: r.target_area_search ?? null,
           従業員数の条件: r.target_number_of_employees ?? null,
           出典: `https://www.jgrants-portal.go.jp/subsidy/${r.id}`,
-          見つけた日: 今日,
+          見つけた日: 前の見つけた日.get(r.id) ?? 今日,
         })
       }
     }
