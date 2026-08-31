@@ -234,6 +234,26 @@ function 記事ページ(k) {
   </section>`
     : ''
 
+  /**
+   * 関連ページ（記事JSONの links）。**本文の中にリンクは書けません。**
+   * 本文は丸ごと文字として扱う（HTMLを書けると、書き手が壊せてしまう）ため、
+   * 「詳しくはこちら」を本文に書いても、ただの文字列になって押せません。
+   * リンクにしたいものは、ここに分けて置きます。
+   */
+  const 関連 = (k.links ?? []).filter(x => x && x.url && x.name)
+  const 関連の節 = 関連.length
+    ? `
+  <section id="related">
+    <h2>あわせて使えるもの</h2>
+    ${関連
+      .map(x => `<div class="item">
+  <h3><a href="${e(x.url)}">${e(x.name)}</a></h3>
+  <p>${e(x.why ?? '')}</p>
+</div>`)
+      .join('')}
+  </section>`
+    : ''
+
   const 確認 = k.checklist.map(c => `<li>${e(c)}</li>`).join('')
   const 質問 = k.faq.map(f => `<div class="qa"><h3>${e(f.q)}</h3><p>${e(f.a)}</p></div>`).join('\n')
 
@@ -258,6 +278,7 @@ function 記事ページ(k) {
     ${商品}
   </section>
   ${申込先の節}
+  ${関連の節}
 
   <section>
     <h2>よくある質問</h2>
