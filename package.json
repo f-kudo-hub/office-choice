@@ -1,0 +1,14 @@
+{
+  "name": "office-choice-site",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "毎週1本、記事が自動で増えるアフィリエイトサイト",
+  "scripts": {
+    "記事": "node tools/記事を作る.mjs",
+    "組み立て": "node tools/サイトを組み立てる.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.120.0"
+  }
+}

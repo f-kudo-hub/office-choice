@@ -1,0 +1,79 @@
+# 毎週の記事投稿
+#
+# 毎週月曜の朝7時（日本時間）に、記事を1本書いてサイトに公開します。
+# GitHubのサーバーで動くので、PCの電源が入っていなくても実行されます。
+#
+# 動くために必要なもの（1回だけの設定）：
+#   Settings → Secrets and variables → Actions → New repository secret
+#     名前: ANTHROPIC_API_KEY
+#     値  : Anthropicのコンソールで作ったAPIキー
+#
+# 手で試すとき：Actions タブ → 毎週の記事投稿 → Run workflow
+
+name: 毎週の記事投稿
+
+on:
+  schedule:
+    # UTC 日曜22:00 ＝ 日本時間 月曜7:00
+    # （※定期実行は既定ブランチでのみ動きます。GitHubの仕様です）
+    - cron: "0 22 * * 0"
+  workflow_dispatch:
+    inputs:
+      本数:
+        description: "今回作る記事の本数"
+        required: false
+        default: "1"
+
+permissions:
+  contents: write
+
+# 前の回が終わる前に次が始まると、記事が二重に増えます。
+concurrency:
+  group: weekly-post
+  cancel-in-progress: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: 作業場を取り出す
+        uses: actions/checkout@v4
+
+      - name: Node を用意する
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: 部品を入れる
+        run: npm install --no-audit --no-fund
+
+      - name: 記事を書く
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node "tools/記事を作る.mjs" --本数=${{ github.event.inputs.本数 || '1' }}
+
+      # 記事が書けなくても、既存の記事からサイトは作り直します。
+      # 設定（Amazonのタグなど）だけ変えた回も、これで全ページに反映されます。
+      - name: サイトを組み立てる
+        if: always()
+        run: node "tools/サイトを組み立てる.mjs"
+
+      - name: 公開する
+        if: always()
+        run: |
+          git config user.name  "毎週の記事投稿"
+          git config user.email "noreply@github.com"
+          git add 記事 docs
+          if git diff --cached --quiet; then
+            echo "変化なし。公開しません。"
+            exit 0
+          fi
+          git commit -m "毎週の記事投稿：$(TZ=Asia/Tokyo date '+%Y-%m-%d')"
+          for i in 1 2 3 4; do
+            git pull --rebase origin "${GITHUB_REF_NAME}" || true
+            git push origin "HEAD:${GITHUB_REF_NAME}" && exit 0
+            echo "送信に失敗。${i}回目の待機。"; sleep $((2 ** i))
+          done
+          exit 1
