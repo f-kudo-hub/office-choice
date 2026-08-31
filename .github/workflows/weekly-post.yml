@@ -9,6 +9,13 @@
 #     値  : Anthropicのコンソールで作ったAPIキー
 #
 # 手で試すとき：Actions タブ → 毎週の記事投稿 → Run workflow
+#
+# ⚠️ このファイルの「名前」は英字にしてあります（2026-08-31）。
+#    もとは inputs が「本数」という日本語で、GitHubがファイルを読めず、
+#    ワークフロー名がパスのまま表示されていました（＝定期実行が動かない状態）。
+#    **識別子は英字。日本語でよいのは description と name の中身だけです。**
+#    ファイル名も英字に変えました。壊れた初回pushのあとは、
+#    同じパスのままだと定期実行が登録され直さないためです。
 
 name: 毎週の記事投稿
 
@@ -19,7 +26,7 @@ on:
     - cron: "0 22 * * 0"
   workflow_dispatch:
     inputs:
-      本数:
+      count:
         description: "今回作る記事の本数"
         required: false
         default: "1"
@@ -52,7 +59,8 @@ jobs:
       - name: 記事を書く
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: node "tools/記事を作る.mjs" --本数=${{ github.event.inputs.本数 || '1' }}
+          COUNT: ${{ github.event.inputs.count || '1' }}
+        run: node "tools/記事を作る.mjs" --本数="$COUNT"
 
       # 記事が書けなくても、既存の記事からサイトは作り直します。
       # 設定（Amazonのタグなど）だけ変えた回も、これで全ページに反映されます。
