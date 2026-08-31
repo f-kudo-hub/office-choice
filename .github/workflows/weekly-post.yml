@@ -42,7 +42,9 @@ concurrency:
 jobs:
   post:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # まとめて書く回（本数を増やしたとき）は1本ずつ順に書くので、
+    # 30分では途中で切られます。1本あたり数分をみて長めに取ります。
+    timeout-minutes: 90
 
     steps:
       - name: 作業場を取り出す

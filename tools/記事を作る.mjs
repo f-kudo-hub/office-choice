@@ -40,12 +40,18 @@ const 本数 = Number(引('本数') ?? 設定['1回に作る記事数'] ?? 1)
 if (!existsSync(記事置き場)) mkdirSync(記事置き場, { recursive: true })
 
 // ── すでに書いたもの ───────────────────────────────────────────────
-const 既存 = readdirSync(記事置き場)
-  .filter(f => f.endsWith('.json'))
-  .map(f => JSON.parse(readFileSync(join(記事置き場, f), 'utf8')))
+/** 記事置き場を**その都度**読み直します（2026-08-31）。
+ *
+ * まとめて書く回（--本数=8 など）に最初の1回しか読まないと、
+ * 2本目以降は「すでに書いた題名」に**この回で書いたぶんが入っていません。**
+ * AIは重ならない題材を選べず、似た記事が並びます。
+ * 1本書くたびにファイルへ落としているので、読み直せばそのまま渡せます。 */
+const 読み直す = () =>
+  readdirSync(記事置き場)
+    .filter(f => f.endsWith('.json'))
+    .map(f => JSON.parse(readFileSync(join(記事置き場, f), 'utf8')))
 
-const 既存の題名 = 既存.map(k => `- ${k.title}`).join('\n') || '（まだ1本もありません）'
-const 既存のslug = new Set(既存.map(k => k.slug))
+const 既存のslug = new Set(読み直す().map(k => k.slug))
 
 // ── AIに渡す「記事の形」 ──────────────────────────────────────────
 const 記事の形 = {
@@ -118,7 +124,7 @@ const 記事の形 = {
   }
 }
 
-const 書きかたのルール = `
+const 書きかたのルールを作る = 既存の題名 => `
 あなたは、中小企業の総務を20年やってきた人です。売り込みではなく、失敗の避け方を書きます。
 
 【対象ジャンル】
@@ -154,11 +160,13 @@ ${既存の題名}
 const client = new Anthropic()
 
 async function 一本書く(何本目) {
+  const 既存の題名 = 読み直す().map(k => `- ${k.title}`).join('\n') || '（まだ1本もありません）'
+
   const res = await client.messages.create({
     model: 設定.モデル ?? 'claude-opus-5',
     max_tokens: 16000,
     thinking: { type: 'adaptive' },
-    system: 書きかたのルール,
+    system: 書きかたのルールを作る(既存の題名),
     messages: [
       {
         role: 'user',
