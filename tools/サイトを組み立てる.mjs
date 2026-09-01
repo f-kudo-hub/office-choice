@@ -98,6 +98,28 @@ const 広告の1行を作る = 記事 => {
     : '<p class="ad-notice">この記事の商品リンクはAmazonの検索結果へのリンクです（現在、アフィリエイトの提携はありません）。</p>'
 }
 
+/**
+ * 月額のご案内。
+ * ---------------------------------------------------------------------------
+ * **補助金のページにだけ出します。**記事のページには出しません。
+ * 補助金を見に来た方は「締切を見逃したくない」と思って来ています。
+ * そこにだけ置くのが、いちばん自然で、いちばん効きます。
+ *
+ * **設定に note のURLが無ければ、何も出しません。**
+ * 「準備中」と出すくらいなら、出さないほうがよい。
+ */
+function 月額のご案内(type) {
+  const url = (設定['noteマガジンURL'] ?? '').trim()
+  if (!url || type !== '補助金') return ''
+  return `
+<aside class="offer">
+  <p class="offer-lead">締切を見逃さないために</p>
+  <p>受付中の補助金を<strong>毎月まとめて</strong>お届けしています。締切の近い順に並べ、公式ページへの直リンク付き。</p>
+  <p><a class="offer-btn" href="${e(url)}" target="_blank" rel="noopener">月額の購読を見る</a></p>
+  <p class="small">出典はデジタル庁「Jグランツ」の公開データです。まず無料の号をご覧いただけます。</p>
+</aside>`
+}
+
 const 下の帯 = `
 <footer class="foot">
   <p><a href="{{ROOT}}index.html">${e(サイト名)}</a> ・ <a href="{{ROOT}}disclosure.html">広告と免責について</a></p>
@@ -212,6 +234,7 @@ ${アクセス解析()}
 </header>
 <main>
 ${body}
+${月額のご案内(type)}
 </main>
 ${下の帯.replaceAll('{{ROOT}}', root)}
 </body>
