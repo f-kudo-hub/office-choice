@@ -114,6 +114,33 @@ const 下の帯 = `
  * **本文に無いことを書かない。**タイトル・説明・FAQは、実際にページに出ている
  * ものだけをそのまま入れる（構造化データだけ盛るのは、検索側のガイドライン違反）。
  */
+/**
+ * アクセス解析のタグ。
+ * ---------------------------------------------------------------------------
+ * **これが無いと、誰も見ていないのか、見られているのに売れないのかが分かりません。**
+ * 2026-09-01 常務のご指示「AI業務でこれだけ稼げるを実証したい。結果を重視したい」。
+ * 数えられないものは、実証できません。
+ *
+ * 設定.json に測定IDを書けば入ります。**書いていなければ何も入りません**
+ * （空のタグを出すと、あとで「入れたのに動かない」と悩むので、いっそ出しません）。
+ *
+ *   "GA測定ID": "G-XXXXXXXXXX"       … Google Analytics
+ *   "Clarity ID": "xxxxxxxxxx"       … Microsoft Clarity（無料・ヒートマップが見られる）
+ */
+function アクセス解析() {
+  const 出 = []
+  const ga = (設定['GA測定ID'] ?? '').trim()
+  if (ga) {
+    出.push(`<script async src="https://www.googletagmanager.com/gtag/js?id=${ga}"></script>`)
+    出.push(`<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','${ga}')</script>`)
+  }
+  const cl = (設定['ClarityID'] ?? '').trim()
+  if (cl) {
+    出.push(`<script>(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y)})(window,document,"clarity","script","${cl}")</script>`)
+  }
+  return 出.join(String.fromCharCode(10))
+}
+
 function 構造化データ({ type, title, description, canonical, published, faq }) {
   if (!canonical) return ''
   const 物 = []
@@ -176,6 +203,7 @@ ${canonical ? `<meta property="og:url" content="${e(canonical)}">` : ''}
 <meta name="twitter:card" content="summary">
 ${構造化データ({ type, title, description, canonical, published, faq })}
 <link rel="stylesheet" href="${root}style.css">
+${アクセス解析()}
 </head>
 <body>
 <header class="head">

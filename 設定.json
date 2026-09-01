@@ -7,5 +7,7 @@
   "Amazonトラッキングid": "officechoice0-22",
   "1回に作る記事数": 1,
   "モデル": "claude-opus-5",
-  "AIが書いたことを明記する": true
+  "AIが書いたことを明記する": true,
+  "GA測定ID": "",
+  "ClarityID": ""
 }
