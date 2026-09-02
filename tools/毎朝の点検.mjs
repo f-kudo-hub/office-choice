@@ -24,7 +24,8 @@ import { fileURLToPath } from 'node:url'
 // **どこから呼ばれても同じ答えを返す。**作業場（00_ClaudeCode）から絶対パスで
 // 呼ばれると、相対パスの `ls 記事` や `git ls-files` が空振りして
 // 「記事0本・ページ数えられません」と出ていました（2026-09-02 に直した）
-process.chdir(join(dirname(fileURLToPath(import.meta.url)), '..'))
+const ここ = dirname(fileURLToPath(import.meta.url))
+process.chdir(join(ここ, '..'))
 
 const リポ = 'f-kudo-hub/office-choice'
 const サイト = 'https://f-kudo-hub.github.io/office-choice/'
@@ -117,6 +118,41 @@ try {
   const n = Array.isArray(提携) ? 提携.length : Object.values(提携)[0]?.length ?? '?'
   出す(`- 提携先：**${n}件**`)
 } catch {}
+
+/* ── 検索の言葉（Search Console） ──────────────────── */
+// 2026-09-02 常務のご指示「（データが）出たら朝の点検で拾えるようにしておいて」。
+//
+// **GA4は「来た人」しか見えません。**「検索結果に出たのに来なかった」が見えないと、
+// 記事を何本増やしても当てずっぽうになります。そこを見るのが Search Console。
+//
+// **催促はしません。**サイトマップを送った直後に急かしても、Google側にまだ数字がありません。
+// 数字が溜まる頃（14日後）から声をかけ、それでも来ない日（28日後）だけ要対応にします。
+出す('')
+出す('## 検索の言葉')
+出す('')
+const サイトマップ送信日 = new Date('2026-09-02T00:00:00+09:00')
+const 送信から = Math.floor((Date.now() - サイトマップ送信日) / 86400000)
+
+let 検索の結果 = ''
+try {
+  検索の結果 = execSync('node "' + join(ここ, '検索の言葉を読む.mjs') + '"', { encoding: 'utf8' }).trim()
+} catch (e) { 検索の結果 = '' }
+
+if (/まだCSVがありません/.test(検索の結果) || 検索の結果 === '') {
+  if (送信から < 14) {
+    出す(`- サイトマップを送って **${送信から}日**。Google側にまだ数字が溜まっていない頃です。**急ぎません。**`)
+  } else {
+    出す('- ⏳ **Search Console の書き出し（CSV）が `データ/` にありません。**')
+    出す('  🔗 https://search.google.com/search-console →「検索パフォーマンス」→ 右上「エクスポート」→ CSV')
+    出す('  zipを展開して、中のCSVを丸ごと `データ/` に入れてください。ファイル名は問いません。')
+    出す('  **これが無いと、どの記事のどの言葉を直せばよいか分かりません。**')
+    if (送信から >= 28) 要対応.push(`Search Console のCSVが未取得（サイトマップ送信から${送信から}日）`)
+  }
+} else {
+  出す('- ○ 読めています。**次に直す記事は `00_検索の言葉.md`** にあります。')
+  for (const l of 検索の結果.split(/\r?\n/)) 出す('  ' + l.trim())
+  if (/要対応/.test(検索の結果)) 要対応.push('検索で出ているのに選ばれていない言葉があります（00_検索の言葉.md）')
+}
 
 /* ── 続けるかを決める日 ────────────────────────────── */
 // 2026-09-02 常務との話で 2026-11-30 に決めることにした。
