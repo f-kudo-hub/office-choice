@@ -6,7 +6,7 @@
  *     ダメな場合は何か手を打って！忘れずにお願い！副業だけどこれも主戦場だ！」
  *
  * **見るのは3つだけ。**
- *   ① 自動更新が動いたか（補助金＝毎朝／記事＝毎週月曜）
+ *   ① 自動更新が動いたか（補助金＝毎朝／記事＝毎朝）
  *   ② サイトが生きているか・ページが増えているか
  *   ③ 収益につながる線（提携先・記事の本数）
  *
@@ -18,6 +18,13 @@
  */
 import { execSync } from 'node:child_process'
 import { writeFileSync, readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+// **どこから呼ばれても同じ答えを返す。**作業場（00_ClaudeCode）から絶対パスで
+// 呼ばれると、相対パスの `ls 記事` や `git ls-files` が空振りして
+// 「記事0本・ページ数えられません」と出ていました（2026-09-02 に直した）
+process.chdir(join(dirname(fileURLToPath(import.meta.url)), '..'))
 
 const リポ = 'f-kudo-hub/office-choice'
 const サイト = 'https://f-kudo-hub.github.io/office-choice/'
@@ -48,7 +55,7 @@ if (!一覧) {
 } else {
   for (const [名, パス, 間隔] of [
     ['補助金の更新', 'subsidy-refresh', '毎朝6時'],
-    ['毎週の記事', 'weekly-post', '毎週月曜7時'],
+    ['毎日の記事', 'post-daily', '毎朝7時'],
   ]) {
     const w = 一覧.workflows.find(x => x.path.includes(パス))
     if (!w) { 出す(`- ⚠ **${名}**：ワークフローが見つかりません`); 要対応.push(`${名}のワークフローがありません`); continue }
@@ -61,10 +68,18 @@ if (!一覧) {
     const 印 = 結果 === 'success' ? '○' : '✗'
     出す(`- ${印} **${名}**（${間隔}）：最後は ${String(最新.created_at).slice(0,16).replace('T',' ')} UTC・${結果}（${経過}時間前）`)
     if (結果 !== 'success') 要対応.push(`${名}が失敗しています（${結果}）`)
+    // **定期実行の枠が本当に叩かれているかを見る。**手動だけ通っていても「動いている」ではない。
+    // ワークフローの文法が壊れていると、GitHubは登録せず、schedule の回が1件も出ません
+    // （2026-09-02、if: が二重で丸ごと登録されていませんでした）
+    const 定期 = runs.workflow_runs.filter(r => r.event === 'schedule')
+    if (定期.length === 0) {
+      出す(`  - ⚠ 直近5回に**定期実行が1件もありません**（手で走らせた分だけです）`)
+      要対応.push(`${名}の定期実行が登録されていません（文法エラーの疑い）`)
+    }
     // 毎朝のものが30時間以上動いていなければ、止まっている
     if (パス === 'subsidy-refresh' && 経過 > 30) 要対応.push(`補助金の更新が${経過}時間動いていません`)
-    // 毎週のものが9日以上動いていなければ、止まっている
-    if (パス === 'weekly-post' && 経過 > 24 * 9) 要対応.push(`毎週の記事が${Math.floor(経過/24)}日動いていません`)
+    // 毎朝のものが30時間以上動いていなければ、止まっている
+    if (パス === 'post-daily' && 経過 > 30) 要対応.push(`毎日の記事が${経過}時間動いていません`)
   }
 }
 

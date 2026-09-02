@@ -103,24 +103,22 @@ jobs:
       # 記事が書けなくても、既存の記事からサイトは作り直します。
       # 設定（Amazonのタグなど）だけ変えた回も、これで全ページに反映されます。
       - name: サイトを組み立てる
-        if: steps.today.outputs.skip != 'true'
-        if: always()
+        if: ${{ !cancelled() && steps.today.outputs.skip != 'true' }}
         run: node "tools/サイトを組み立てる.mjs"
 
       # **公開してから知らせる。**先に知らせても、検索側が見に来たとき
       # まだ新しいページが無い（鍵ファイルも読めない）ので意味がない。
       - name: 公開する
-        if: steps.today.outputs.skip != 'true'
-        if: always()
+        if: ${{ !cancelled() && steps.today.outputs.skip != 'true' }}
         run: |
-          git config user.name  "毎週の記事投稿"
+          git config user.name  "毎日の記事投稿"
           git config user.email "noreply@github.com"
           git add 記事 docs データ
           if git diff --cached --quiet; then
             echo "変化なし。公開しません。"
             exit 0
           fi
-          git commit -m "毎週の記事投稿：$(TZ=Asia/Tokyo date '+%Y-%m-%d')"
+          git commit -m "毎日の記事投稿：$(TZ=Asia/Tokyo date '+%Y-%m-%d')"
           for i in 1 2 3 4; do
             git pull --rebase origin "${GITHUB_REF_NAME}" || true
             git push origin "HEAD:${GITHUB_REF_NAME}" && exit 0
@@ -132,7 +130,6 @@ jobs:
       # Bing / Yandex 向け（Googleは非対応。Google向けは Search Console が要る）。
       # **失敗しても記事の公開は取り消さない。**知らせの失敗で投稿をなかったことにしない。
       - name: 検索エンジンに知らせる（IndexNow）
-        if: steps.today.outputs.skip != 'true'
-        if: always()
+        if: ${{ !cancelled() && steps.today.outputs.skip != 'true' }}
         continue-on-error: true
         run: node "tools/検索エンジンに知らせる.mjs"
