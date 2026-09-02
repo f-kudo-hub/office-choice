@@ -40,6 +40,12 @@ on:
         description: "今回作る記事の本数"
         required: false
         default: "1"
+      # 識別子は英字にすること。日本語にするとGitHubがファイルを読めなくなり、
+      # ワークフローごと止まります（2026-08-31 に実際に起きました）
+      topic:
+        description: "題材の指定（空ならAIが自分で選びます）"
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -98,6 +104,7 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           COUNT: ${{ github.event.inputs.count || '1' }}
+          TOPIC: ${{ github.event.inputs.topic || '' }}
         run: node "tools/記事を作る.mjs" --本数="$COUNT"
 
       # 記事が書けなくても、既存の記事からサイトは作り直します。
