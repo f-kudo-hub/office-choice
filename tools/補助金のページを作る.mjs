@@ -267,6 +267,36 @@ ${行('Jグランツで申請できるか', e(k.詳細.Jグランツで申請で
 ${行('制度番号', e(k.番号 ?? '—'))}
 </table>`
 
+    /* ── 締切までの帯（このページだけの計算）────────────────────
+       「あと271日」を数字で読むより、帯で見たほうが速い。
+       ⚠ **受付開始が分からない補助金には出さない。**始まりが無いと帯が引けず、
+       　 適当な起点を置くと「もう半分過ぎている」のような嘘の印象を与える。 */
+    const 期間の図 = (() => {
+      if (終了) return ''
+      if (!k.受付開始 || !/^\d{4}-\d{2}-\d{2}$/.test(k.受付開始)) return ''
+      const 日 = t => new Date(t + 'T00:00:00+09:00')
+      const 全 = (日(k.締切) - 日(k.受付開始)) / 86400000
+      if (!(全 > 0)) return ''
+      const 経過 = Math.min(Math.max((日(今日) - 日(k.受付開始)) / 86400000, 0), 全)
+      const 割 = 経過 / 全
+      const L = 24, R = 576, 幅 = R - L
+      const x = Math.round(L + 幅 * 割)
+      // 「あと◯日」の札が端からはみ出さないように寄せる
+      const 札 = x < L + 60 ? { x: L, a: 'start' } : x > R - 60 ? { x: R, a: 'end' } : { x, a: 'middle' }
+      return `
+    <figure class="fig">
+      <svg viewBox="0 0 600 92" role="img" aria-label="受付開始${e(k.受付開始)}から締切${e(k.締切)}まで。今日はあと${日数}日の地点。">
+        <text x="${札.x}" y="30" text-anchor="${札.a}" font-size="17" font-weight="700" fill="var(--ink)">あと${日数}日</text>
+        <rect x="${L}" y="50" width="${幅}" height="12" rx="6" fill="var(--line)"></rect>
+        <rect class="bar" x="${L}" y="50" width="${Math.max(1, Math.round(幅 * 割))}" height="12" rx="6" fill="var(--accent)"></rect>
+        <circle cx="${x}" cy="56" r="8" fill="var(--bg)" stroke="var(--accent)" stroke-width="3"></circle>
+        <text x="${L}" y="84" text-anchor="start" font-size="12.5" fill="var(--sub)">受付開始　${e(k.受付開始)}</text>
+        <text x="${R}" y="84" text-anchor="end" font-size="12.5" fill="var(--sub)">締切　${e(k.締切)}</text>
+      </svg>
+      <figcaption>受付が始まってから締切までのうち、今日がどこかを示しています。日数は当サイトが締切から計算したものです。</figcaption>
+    </figure>`
+    })()
+
     // ── 自己負担の目安（このページだけの計算）────────────────────
     const 率 = 割合を読む(k.詳細.補助率)
     let 自己負担の節 = ''
@@ -277,6 +307,16 @@ ${行('制度番号', e(k.番号 ?? '—'))}
   <section id="jiko">
     <h2>上限まで使うとき、自己負担はいくらか</h2>
     <p>補助率「${e(k.詳細.補助率)}」と上限額${e(円(k.上限額))}から逆算すると、こうなります。</p>
+    <figure class="fig">
+      <svg viewBox="0 0 600 104" role="img" aria-label="事業費${e(円(事業費))}のうち、補助される額が${e(円(k.上限額))}、自己負担が${e(円(自己負担))}。">
+        <text x="24" y="22" font-size="12.5" fill="var(--sub)">事業費 ${e(円(事業費))} を使ったとき</text>
+        <rect x="24" y="38" width="552" height="26" rx="4" fill="var(--line)"></rect>
+        <rect class="bar" x="24" y="38" width="${Math.max(2, Math.round(552 * 率))}" height="26" rx="4" fill="var(--accent)"></rect>
+        <text x="24" y="88" text-anchor="start" font-size="14" fill="var(--ink)">補助される額　${e(円(k.上限額))}</text>
+        <text x="576" y="88" text-anchor="end" font-size="14" font-weight="700" fill="var(--ink)">自己負担　${e(円(自己負担))}</text>
+      </svg>
+      <figcaption>色のついたところが補助される分、残りが自社で出す分です。補助率「${e(k.詳細.補助率)}」と上限額から機械的に計算しています。</figcaption>
+    </figure>
     <table class="spec">
       <tr><th>かかる費用（事業費）</th><td>${e(円(事業費))}</td></tr>
       <tr><th>補助される額</th><td>${e(円(k.上限額))}</td></tr>
@@ -476,6 +516,7 @@ ${行('制度番号', e(k.番号 ?? '—'))}
     <p class="note">出典：デジタル庁「Jグランツ」公開API。${e(k.詳細.取得日)}に取得したものです。
     <strong>当サイトは写しを持たず、毎朝取り直しています。</strong></p>
     ${基本の表}
+${期間の図}
     <p><a class="btn" href="${e(k.出典)}" target="_blank" rel="noopener">Jグランツの公式ページを見る</a></p>
   </section>
 ${自己負担の節}

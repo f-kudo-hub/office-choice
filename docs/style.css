@@ -38,6 +38,16 @@ li{margin:.3rem 0}
 .foot{max-width:44rem;margin:0 auto;padding:1.6rem 1.2rem 3rem;border-top:1px solid var(--line);color:var(--sub);font-size:.84rem}
 .foot p{margin:.3rem 0}
 .small{font-size:.78rem}
+/* 図（数字を帯で見せる）。**画像ファイルは使わずSVGを直接書く。**
+   写真を足すと表示が遅くなり、Core Web Vitals が落ちて検索に不利になるため。
+   色はすべて上の変数なので、ダークモードでもそのまま合う。 */
+.fig{margin:1.4rem 0;padding:1rem 1.1rem .9rem;border:1px solid var(--line);border-radius:8px;background:var(--card)}
+.fig svg{display:block;width:100%;height:auto}
+.fig figcaption{color:var(--sub);font-size:.78rem;margin:.55rem 0 0;line-height:1.7}
+/* 帯は左から伸びる。**動きを控える設定の人には出さない**（検索から来た人は答えを探しに来ている） */
+.fig .bar{transform-box:fill-box;transform-origin:left center;animation:figgrow .85s cubic-bezier(.2,.7,.3,1) both}
+@keyframes figgrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@media (prefers-reduced-motion:reduce){.fig .bar{animation:none}}
 
 /* ── 補助金のページ ───────────────────────────────────────── */
 .crumb{font-size:.84rem;color:var(--sub);margin:1.4rem 0 0}
