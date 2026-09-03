@@ -48,6 +48,14 @@ li{margin:.3rem 0}
 .fig .bar{transform-box:fill-box;transform-origin:left center;animation:figgrow .85s cubic-bezier(.2,.7,.3,1) both}
 @keyframes figgrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 @media (prefers-reduced-motion:reduce){.fig .bar{animation:none}}
+/* 締切がいちばん近いもの。**件数より、名前のほうが自分ごとになる。** */
+.soon-h{font-size:.95rem;margin:1.6rem 0 .4rem;border:0;padding:0}
+.soon{list-style:none;padding:0;margin:0}
+.soon li{display:flex;gap:.7rem;align-items:baseline;flex-wrap:wrap;padding:.6rem 0;border-bottom:1px solid var(--line);font-size:.92rem}
+.soon li:last-child{border-bottom:0}
+.soon .d{flex:none;min-width:5.2em;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums}
+.soon a{flex:1 1 14em;color:var(--ink)}
+.soon .pl{flex:none;color:var(--sub);font-size:.8rem;max-width:9em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* ── 補助金のページ ───────────────────────────────────────── */
 .crumb{font-size:.84rem;color:var(--sub);margin:1.4rem 0 0}

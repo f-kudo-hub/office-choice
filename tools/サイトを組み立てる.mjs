@@ -356,16 +356,44 @@ function 記事ページ(k) {
  * **トップから1クリックで行けないページは、無いのと同じです。**
  * 検索から直接ページに来た人にも、サイト全体で何をやっているかが伝わるように置きます。
  */
-const 補助金への案内 = 受付中 =>
-  受付中
-    ? `<section class="lead-in">
+const 補助金への案内 = (受付中, 間近 = [], 分布 = []) => {
+  if (!受付中) return ''
+  /* 締切までの残り日数の分布。**「147件あります」は多さの自慢にしかならない。**
+     「30日以内に締切が12件ある」と言えば、読む人は自分の予定と照らせる。 */
+  const 最大 = Math.max(1, ...分布.map(x => x.件数))
+  const 分布の図 = 分布.length
+    ? `<figure class="fig">
+      <svg viewBox="0 0 600 ${40 + 分布.length * 34}" role="img" aria-label="締切までの残り日数ごとの件数。${分布.map(x => `${x.名}が${x.件数}件`).join('、')}。">
+        <text x="0" y="16" font-size="12.5" fill="var(--sub)">締切までの残り日数（受付中 ${受付中}件）</text>
+${分布.map((x, i) => {
+  const y = 34 + i * 34
+  const w = Math.max(2, Math.round(430 * (x.件数 / 最大)))
+  return `        <text x="0" y="${y + 15}" font-size="13" fill="var(--sub)">${e(x.名)}</text>
+        <rect x="112" y="${y + 3}" width="430" height="16" rx="3" fill="var(--line)"></rect>
+        <rect class="bar" x="112" y="${y + 3}" width="${w}" height="16" rx="3" fill="var(--accent)"></rect>
+        <text x="600" y="${y + 15}" text-anchor="end" font-size="13" font-weight="700" fill="var(--ink)">${x.件数}件</text>`
+}).join('')}
+      </svg>
+      <figcaption>デジタル庁「Jグランツ」の公開データから、中小企業が使えるものだけを抜き出して数えています。毎朝取り直しています。</figcaption>
+    </figure>`
+    : ''
+  /* 締切がいちばん近い5件。**件数より、名前のほうが自分ごとになる。** */
+  const 間近の表 = 間近.length
+    ? `<ul class="soon">
+${間近.map(k => `      <li><span class="d">あと${k.日数}日</span><a href="${e(k.先)}">${e(k.名称)}</a><span class="pl">${e(k.地域 || '全国')}</span></li>`).join('')}
+    </ul>`
+    : ''
+  return `<section class="lead-in">
   <h2><a href="hojo/index.html">いま受付中の補助金の締切一覧（${受付中}件）</a></h2>
   <p>デジタル庁「Jグランツ」の公開データから、中小企業の設備投資・IT導入・販路拡大・職場環境の改善に使えるものだけを抜き出しています。1件ずつのページに、<strong>自己負担の目安</strong>と、<strong>締切から逆算した段取り</strong>をまとめました。毎朝更新しています。</p>
-  <p><a href="hojo/checker.html"><strong>▸ 都道府県とやりたいことから探す（補助金チェッカー・登録不要）</strong></a></p>
+  ${分布の図}
+  <h3 class="soon-h">締切がいちばん近いもの</h3>
+  ${間近の表}
+  <p><a href="hojo/index.html">▸ 受付中の${受付中}件をすべて見る</a>　／　<a href="hojo/checker.html"><strong>都道府県とやりたいことから探す（登録不要）</strong></a></p>
 </section>`
-    : ''
+}
 
-function 一覧ページ(補助金の受付中) {
+function 一覧ページ(補助金の受付中, 間近, 分布) {
   const 中身 = 記事一覧.length
     ? 記事一覧
         .map(
@@ -382,7 +410,7 @@ function 一覧ページ(補助金の受付中) {
   return ページ({
     title: `${サイト名}｜${設定.サイトの説明}`,
     description: 設定.サイトの説明,
-    body: `<h1 class="sr">記事の一覧</h1>\n${補助金への案内(補助金の受付中)}\n<ul class="cards">\n${中身}\n</ul>`,
+    body: `<h1 class="sr">記事の一覧</h1>\n${補助金への案内(補助金の受付中, 間近, 分布)}\n<ul class="cards">\n${中身}\n</ul>`,
     root: './',
     canonical: 公開URL ? `${公開URL}/` : ''
   })
@@ -477,6 +505,14 @@ li{margin:.3rem 0}
 .fig .bar{transform-box:fill-box;transform-origin:left center;animation:figgrow .85s cubic-bezier(.2,.7,.3,1) both}
 @keyframes figgrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 @media (prefers-reduced-motion:reduce){.fig .bar{animation:none}}
+/* 締切がいちばん近いもの。**件数より、名前のほうが自分ごとになる。** */
+.soon-h{font-size:.95rem;margin:1.6rem 0 .4rem;border:0;padding:0}
+.soon{list-style:none;padding:0;margin:0}
+.soon li{display:flex;gap:.7rem;align-items:baseline;flex-wrap:wrap;padding:.6rem 0;border-bottom:1px solid var(--line);font-size:.92rem}
+.soon li:last-child{border-bottom:0}
+.soon .d{flex:none;min-width:5.2em;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums}
+.soon a{flex:1 1 14em;color:var(--ink)}
+.soon .pl{flex:none;color:var(--sub);font-size:.8rem;max-width:9em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* ── 補助金のページ ───────────────────────────────────────── */
 .crumb{font-size:.84rem;color:var(--sub);margin:1.4rem 0 0}
@@ -581,7 +617,7 @@ for (const k of 記事一覧) writeFileSync(join(公開先, 'kiji', `${k.slug}.h
 const 今日 = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10)
 const 補助金 = 補助金ページ一式を作る({ 作業場, 公開先, ページ, e, 提携先, 公開URL, 今日 })
 
-writeFileSync(join(公開先, 'index.html'), 一覧ページ(補助金.受付中 ?? 0), 'utf8')
+writeFileSync(join(公開先, 'index.html'), 一覧ページ(補助金.受付中 ?? 0, 補助金.間近 ?? [], 補助金.分布 ?? []), 'utf8')
 
 // サイトマップとrobots（公開URLが分かっているときだけ）
 if (公開URL) {
