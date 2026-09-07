@@ -111,6 +111,57 @@ if (!一覧) {
    この壊れ方は永遠に異常なしのままでした。**
    だからここで、**最後に記事が増えた日**を直接見ます。 */
 出す('')
+/* ── ①-c **土台が壊れていないか**（2026-09-07 追加）─────────────────
+   ⚠ **今日だけで、失敗として現れない壊れ方が3つ起きた。**
+     ・組み立て直すと docs/CNAME が消えた（放置なら翌朝ドメインが外れてサイトごと落ちた）
+     ・Search Console の所有権確認ファイルも同じ性質（消えると所有権が外れる）
+     ・公開の条件に抜けがあり、直しても反映されない状態だった
+   **どれもエラーを出さない。**画面には何も出ないまま、静かに壊れる。
+   だから毎朝、**外から実物を叩いて**確かめる。 */
+出す('')
+出す('## 土台')
+出す('')
+{
+  const 見る = [
+    ['トップ',                 'https://soumu-choice.com/',                              'html'],
+    ['サイトマップ',           'https://soumu-choice.com/sitemap.xml',                   'xml'],
+    ['robots.txt',             'https://soumu-choice.com/robots.txt',                    'robots'],
+    ['所有権の確認ファイル',   'https://soumu-choice.com/google5be523a40969bb3f.html',   'text'],
+  ]
+  for (const [名, url, 型] of 見る) {
+    try {
+      const r = await fetch(url, { redirect: 'follow' })
+      const 本文 = await r.text()
+      let ok = r.ok
+      let 補足 = ''
+      // **200だけでは足りない。**中身が期待どおりかまで見る
+      if (ok && 型 === 'xml' && !本文.includes('<loc>')) { ok = false; 補足 = '（中身にURLが無い）' }
+      if (ok && 型 === 'robots' && !/Sitemap:\s*https:\/\/soumu-choice\.com/.test(本文)) {
+        ok = false; 補足 = '（サイトマップの宣言が無い）'
+      }
+      if (ok && 型 === 'text' && !本文.includes('google-site-verification')) { ok = false; 補足 = '（中身が違う）' }
+      if (ok && 型 === 'html' && !本文.includes('cloudflareinsights') && !本文.includes('gtag')) {
+        ok = false; 補足 = '（計測タグが消えている）'
+      }
+      出す(`- ${ok ? '○' : '✗'} ${名}　HTTP ${r.status}${補足}`)
+      if (!ok) 要対応.push(`土台がこわれています：${名} HTTP ${r.status}${補足}`)
+    } catch (e) {
+      出す(`- ✗ ${名}　読めませんでした`)
+      要対応.push(`土台を確かめられませんでした：${名}`)
+    }
+  }
+  // 独自ドメインの札。**消えると翌朝サイトごと落ちる**
+  try {
+    const c = readFileSync('docs/CNAME', 'utf8').trim()
+    const ok = c === 'soumu-choice.com'
+    出す(`- ${ok ? '○' : '✗'} docs/CNAME　${c || '（空）'}`)
+    if (!ok) 要対応.push(`docs/CNAME がおかしい（${c}）`)
+  } catch {
+    出す('- ✗ docs/CNAME　**ありません**')
+    要対応.push('docs/CNAME が消えています（このままだとドメインが外れます）')
+  }
+}
+
 出す('## 記事が増えているか')
 出す('')
 try {
