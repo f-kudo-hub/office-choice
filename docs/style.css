@@ -115,3 +115,9 @@ blockquote p{margin:0}
 .hit .date{color:var(--sub);font-size:.82rem;margin:0}
 .hit .price{margin:.3rem 0 0;font-size:.85rem}
 .hit .tags{margin:.3rem 0}
+
+/* ── 締切アラートの登録口 ─────────────────────────────────── */
+/* iframeは幅を指定しないとスマホで横にはみ出す。**390pxで実測して決めている** */
+.formwrap{border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:1rem 0;background:var(--bg)}
+.formwrap iframe{display:block;width:100%;max-width:100%;border:0}
+.lede{font-size:1.02rem;background:var(--card);border-left:3px solid var(--accent);border-radius:6px;padding:.8rem 1rem}

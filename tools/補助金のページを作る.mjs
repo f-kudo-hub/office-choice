@@ -543,6 +543,7 @@ ${引用の節}
       type: '記事',
       published: k.見つけた日,
       faq: 終了 ? [] : faq,
+      案内を出す: true,
     })
 
     // **終了したものは検索から外す。**古い情報で人を呼ぶと、来た人の役に立たない
@@ -719,6 +720,7 @@ ${引用の節}
       body: 探すbody,
       root: '../',
       canonical: 公開URL ? `${公開URL}/hojo/checker.html` : '',
+      案内を出す: true,
     }),
     'utf8',
   )
@@ -733,6 +735,7 @@ ${引用の節}
       body: 一覧body,
       root: '../',
       canonical: 一覧canonical,
+      案内を出す: true,
     }),
     'utf8',
   )

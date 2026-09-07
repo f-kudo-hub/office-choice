@@ -108,9 +108,17 @@ const 広告の1行を作る = 記事 => {
  * **設定に note のURLが無ければ、何も出しません。**
  * 「準備中」と出すくらいなら、出さないほうがよい。
  */
-function 月額のご案内(type) {
+/**
+ * ⚠ **2026-09-07、ここは一度も表示されていませんでした。**
+ * 条件が `type !== '補助金'` でしたが、補助金のページは `type: '記事'` か type なしで
+ * 作られています。**どのページにも当てはまらず、書いた日からずっと空文字を返していた。**
+ * ビルドは通り、画面も壊れず、エラーも出ないので、誰にも気づけない壊れ方でした。
+ * **「置いた」と「出ている」は別物です。**置いたら、実際に出ているかを数えること。
+ * いまは呼ぶ側が `案内を出す: true` と明示します（type に頼らない）。
+ */
+function 月額のご案内(案内を出す) {
   const url = (設定['noteマガジンURL'] ?? '').trim()
-  if (!url || type !== '補助金') return ''
+  if (!url || !案内を出す) return ''
   return `
 <aside class="offer">
   <p class="offer-lead">締切を見逃さないために</p>
@@ -118,6 +126,114 @@ function 月額のご案内(type) {
   <p><a class="offer-btn" href="${e(url)}" target="_blank" rel="noopener">月額の購読を見る</a></p>
   <p class="small">出典はデジタル庁「Jグランツ」の公開データです。まず無料の号をご覧いただけます。</p>
 </aside>`
+}
+
+/**
+ * 無料の「締切アラート」登録口（名簿を作る階）
+ * ---------------------------------------------------------------------------
+ * **これが計画の①です。**アフィリエイトは単発報酬で積み上がりません。
+ * 積み上がるのは名簿だけです。補助金を見に来た方は「締切を見逃したくない」と
+ * 思って来ているので、**その場が唯一いちばん自然な登録口**になります。
+ *
+ * ⚠ **登録先が設定に無ければ、ページも案内も出しません。**
+ * 「準備中」のフォームほど信用を落とすものはない（月額のご案内と同じ考え方）。
+ *
+ * 設定.json：
+ *   "締切アラート_GoogleフォームURL": "https://docs.google.com/forms/d/e/.../viewform"
+ *       … いちばん良い形。ページの中に埋め込みます（登録者は名簿として残ります）
+ *   "締切アラート_受付メール": "you@example.com"
+ *       … フォームが無いときの控え。メールソフトが開くだけなので取りこぼしますが、
+ *         **アカウントを1つも作らずに今日から動きます。**
+ * 両方あるときはフォームを使います。
+ */
+const アラート登録先 = () => {
+  const form = (設定['締切アラート_GoogleフォームURL'] ?? '').trim()
+  if (form) return { 種類: 'フォーム', url: form }
+  const mail = (設定['締切アラート_受付メール'] ?? '').trim()
+  if (mail) return { 種類: 'メール', url: mail }
+  return null
+}
+
+/** Googleフォームは ?embedded=true を付けると枠だけになる（公式の作法） */
+const 埋め込みURL = u => u + (u.includes('?') ? '&' : '?') + 'embedded=true'
+
+const メールの下書き = mail => {
+  const 件名 = '締切アラートの登録'
+  const 本文 = [
+    '「オフィスの選びかた」の締切アラートに登録します。',
+    '',
+    '会社名：',
+    '都道府県：',
+    '従業員数：',
+    '興味のある使いみち（設備投資 / IT導入 / 販路拡大 / 人材・研修 / 省エネ など）：',
+    '',
+    '※このまま送信していただければ登録します。',
+  ].join('\n')
+  return `mailto:${mail}?subject=${encodeURIComponent(件名)}&body=${encodeURIComponent(本文)}`
+}
+
+/** 補助金のページの下に出す、無料アラートへの短い案内 */
+function 無料アラートのご案内(案内を出す) {
+  const 先 = アラート登録先()
+  if (!先 || !案内を出す) return ''
+  return `
+<aside class="offer">
+  <p class="offer-lead">締切を見逃さないために（無料）</p>
+  <p>お住まいの都道府県と会社の規模を教えていただければ、<strong>使えそうな補助金の締切が近づいたときだけ</strong>お知らせします。毎朝データを取り直しているので、締切の変更もそのまま反映されます。</p>
+  <p><a class="offer-btn" href="{{ROOT}}alert/index.html">無料の締切アラートに登録する</a></p>
+  <p class="small">費用はかかりません。配信は止められます。お名前と会社名は必須ではありません。</p>
+</aside>`
+}
+
+/** 登録口そのもののページ */
+function アラート登録ページ(受付中) {
+  const 先 = アラート登録先()
+  if (!先) return null
+
+  const 入口 =
+    先.種類 === 'フォーム'
+      ? `<div class="formwrap">
+  <iframe src="${e(埋め込みURL(先.url))}" width="100%" height="760" frameborder="0" marginheight="0" marginwidth="0" title="締切アラートの登録フォーム">読み込んでいます…</iframe>
+</div>
+<p class="small">フォームが表示されない場合は <a href="${e(先.url)}" target="_blank" rel="noopener">こちらから直接ご登録</a>いただけます。</p>`
+      : `<p><a class="offer-btn" href="${e(メールの下書き(先.url))}">メールで登録する</a></p>
+<p class="small">ボタンを押すと、メールソフトが下書きを開きます。<strong>中身を埋めて送信していただくだけ</strong>で登録は完了です。こちらから確認のご返信をお送りします。</p>`
+
+  const body = `
+<article>
+<h1>補助金の締切アラート（無料）</h1>
+
+<p class="lede">受付中の補助金は、いま <strong>${受付中}件</strong>あります。そのうち<strong>締切に間に合うもの</strong>は、会社の場所と規模によって変わります。ご登録いただければ、<strong>あてはまるものの締切が近づいたときだけ</strong>お知らせします。</p>
+
+<h2>お送りするもの</h2>
+<ul>
+  <li><strong>締切の近づいたお知らせ</strong>— 対象になりそうなものだけ。締切の30日前と7日前</li>
+  <li><strong>今月の補助金レポート</strong>— 受付中のものを締切順に並べた一覧（毎月1回）</li>
+  <li><strong>新しく出た制度のお知らせ</strong>— その月に受付が始まったもの</li>
+</ul>
+
+<h2>お送りしないもの</h2>
+<ul>
+  <li>営業のご連絡、他社へのお客様情報の提供は<strong>いたしません</strong></li>
+  <li>申請の代行は行いません（有償の申請代行は行政書士の業務です）。お出しするのは<strong>締切と条件の情報まで</strong>です</li>
+</ul>
+
+<h2>情報の出どころ</h2>
+<p>デジタル庁「Jグランツ」の公開API（公的な一次情報）です。まとめサイトの写しではありません。<strong>毎朝取り直しています。</strong>制度の中身はこちらで言い換えていませんので、申請の前には必ず各制度の公式ページをご確認ください。</p>
+
+<h2>ご登録</h2>
+${入口}
+
+<p class="small">配信の停止はいつでもできます。いただいた情報は、補助金のお知らせをお送りする目的にのみ使います。</p>
+</article>
+`
+  return ページ({
+    title: `補助金の締切アラート（無料）｜${サイト名}`,
+    description: `受付中${受付中}件の補助金から、お使いになれそうなものの締切が近づいたときだけお知らせします。デジタル庁の公開データを毎朝取り直しています。登録は無料です。`,
+    body,
+    root: '../',
+    canonical: 公開URL ? `${公開URL}/alert/` : '',
+  })
 }
 
 const 下の帯 = `
@@ -208,7 +324,7 @@ function 構造化データ({ type, title, description, canonical, published, fa
     .join('\n')
 }
 
-function ページ({ title, description, body, root, canonical, type, published, faq }) {
+function ページ({ title, description, body, root, canonical, type, published, faq, 案内を出す }) {
   return `<!doctype html>
 <html lang="ja">
 <head>
@@ -234,7 +350,8 @@ ${アクセス解析()}
 </header>
 <main>
 ${body}
-${月額のご案内(type)}
+${無料アラートのご案内(案内を出す).replaceAll('{{ROOT}}', root)}
+${月額のご案内(案内を出す)}
 </main>
 ${下の帯.replaceAll('{{ROOT}}', root)}
 </body>
@@ -412,7 +529,8 @@ function 一覧ページ(補助金の受付中, 間近, 分布) {
     description: 設定.サイトの説明,
     body: `<h1 class="sr">記事の一覧</h1>\n${補助金への案内(補助金の受付中, 間近, 分布)}\n<ul class="cards">\n${中身}\n</ul>`,
     root: './',
-    canonical: 公開URL ? `${公開URL}/` : ''
+    canonical: 公開URL ? `${公開URL}/` : '',
+    案内を出す: true
   })
 }
 
@@ -572,6 +690,12 @@ blockquote p{margin:0}
 .hit .date{color:var(--sub);font-size:.82rem;margin:0}
 .hit .price{margin:.3rem 0 0;font-size:.85rem}
 .hit .tags{margin:.3rem 0}
+
+/* ── 締切アラートの登録口 ─────────────────────────────────── */
+/* iframeは幅を指定しないとスマホで横にはみ出す。**390pxで実測して決めている** */
+.formwrap{border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:1rem 0;background:var(--bg)}
+.formwrap iframe{display:block;width:100%;max-width:100%;border:0}
+.lede{font-size:1.02rem;background:var(--card);border-left:3px solid var(--accent);border-radius:6px;padding:.8rem 1rem}
 `
 
 // ── 書き出し ──────────────────────────────────────────────────────
@@ -624,12 +748,24 @@ const 補助金 = 補助金ページ一式を作る({ 作業場, 公開先, ペ�
 
 writeFileSync(join(公開先, 'index.html'), 一覧ページ(補助金.受付中 ?? 0, 補助金.間近 ?? [], 補助金.分布 ?? []), 'utf8')
 
+// ── 無料の締切アラートの登録口 ──────────────────────────────────
+// **登録先が設定に無ければ、ページごと作りません。**空のフォームを置かないため。
+const アラート = アラート登録ページ(補助金.受付中 ?? 0)
+if (アラート) {
+  mkdirSync(join(公開先, 'alert'), { recursive: true })
+  writeFileSync(join(公開先, 'alert', 'index.html'), アラート, 'utf8')
+  console.log(`締切アラートの登録口：docs/alert/index.html（登録先＝${アラート登録先().種類}）`)
+} else {
+  console.log('締切アラートの登録口：設定.json に登録先が無いため作りませんでした')
+}
+
 // サイトマップとrobots（公開URLが分かっているときだけ）
 if (公開URL) {
   const url = (loc, d) => `  <url><loc>${e(loc)}</loc>${d ? `<lastmod>${e(d)}</lastmod>` : ''}</url>`
   const 中身 = [
     url(`${公開URL}/`),
     url(`${公開URL}/disclosure.html`),
+    ...(アラート ? [url(`${公開URL}/alert/`, 今日)] : []),
     ...記事一覧.map(k => url(`${公開URL}/kiji/${k.slug}.html`, k.published)),
     // **受付が終わったものはここに入れない。**古い情報で人を呼ばない
     ...(補助金.サイトマップ ?? []).map(loc => url(loc, 今日)),
