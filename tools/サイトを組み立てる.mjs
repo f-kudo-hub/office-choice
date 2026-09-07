@@ -593,7 +593,12 @@ const 守るファイル = []
 if (existsSync(公開先)) {
   for (const f of readdirSync(公開先)) {
     // Googleの所有確認ファイル と IndexNowの鍵（32桁の英数字.txt）
-    if (/^google[0-9a-f]+\.html$/i.test(f) || /^[0-9a-f]{16,64}\.txt$/i.test(f)) {
+    // ⚠ **CNAME（独自ドメインの札）も必ず残す**（2026-09-07 に追加）。
+    //   これが消えると GitHub Pages の独自ドメイン設定が外れ、
+    //   **soumu-choice.com が開かなくなります。**
+    //   組み立ては毎朝走るので、忘れると翌朝サイトごと落ちます。
+    //   買った当日に、実際に一度消えました。
+    if (/^google[0-9a-f]+\.html$/i.test(f) || /^[0-9a-f]{16,64}\.txt$/i.test(f) || f === 'CNAME') {
       守るファイル.push({ 名前: f, 中身: readFileSync(join(公開先, f)) })
     }
   }

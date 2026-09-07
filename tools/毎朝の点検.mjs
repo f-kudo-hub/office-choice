@@ -28,7 +28,7 @@ const ここ = dirname(fileURLToPath(import.meta.url))
 process.chdir(join(ここ, '..'))
 
 const リポ = 'f-kudo-hub/office-choice'
-const サイト = 'https://f-kudo-hub.github.io/office-choice/'
+const サイト = 'https://soumu-choice.com/'
 const 今 = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }))
 const 今日 = 今.toLocaleDateString('sv-SE')
 

@@ -210,7 +210,7 @@ if (当たり.length === 0) {
   出す('')
   出す('| ページ | クリック | 表示 |')
   出す('| --- | ---: | ---: |')
-  for (const x of 当たり) 出す(`| ${String(x.頁).replace('https://f-kudo-hub.github.io/office-choice/', '')} | ${x.click} | ${x.表示} |`)
+  for (const x of 当たり) 出す(`| ${String(x.頁).replace('https://soumu-choice.com/', '')} | ${x.click} | ${x.表示} |`)
 }
 
 出す('')
