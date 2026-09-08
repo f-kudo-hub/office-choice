@@ -32,12 +32,17 @@ switch -Wildcard ($どれ) {
   '*レポート*'     { $file = Join-Path $ここ "会員向け\${今月}_今月の補助金レポート_note用.txt"; $題名から本文 = $false }
   '*紹介*'         { $file = Join-Path $ここ '会員向け\00_紹介記事_無料公開.txt';                $題名から本文 = $true  }
   '*ホームページ*' { $file = Join-Path $ここ 'note原稿\01_補助金でホームページを作る.txt';        $題名から本文 = $true  }
-  default { Write-Host "「レポート」「紹介」「ホームページ」のどれかを指定してください。" -ForegroundColor Yellow; exit 1 }
+  '*説明*'         { $file = Join-Path $ここ '会員向け\00_メンバーシップ説明_note用.txt';          $題名から本文 = $false }
+  default { Write-Host "「レポート」「紹介」「ホームページ」「説明」のどれかを指定してください。" -ForegroundColor Yellow; exit 1 }
 }
 
 if (-not (Test-Path $file)) {
   Write-Host "見つかりません： $file" -ForegroundColor Red
-  Write-Host "先に  node tools\会員向けの原稿を作る.mjs  を走らせてください。"
+  if ($どれ -like '*説明*') {
+    Write-Host "先に  node tools\メンバーシップの説明を作る.mjs  を走らせてください。"
+  } else {
+    Write-Host "先に  node tools\会員向けの原稿を作る.mjs  を走らせてください。"
+  }
   exit 1
 }
 
