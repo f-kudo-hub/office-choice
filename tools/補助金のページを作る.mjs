@@ -625,6 +625,22 @@ ${引用の節}
   const 埋め込むデータ = JSON.stringify(探す用のデータ).replaceAll('</', '<\/')
 
   const 全用途 = [...new Set(受付中.flatMap(k => k.効く用途))]
+
+  /* ── 診断ツールにも申込先を出す（2026-09-08）────────────────────
+     ここは**サイトで一番、意思のはっきりした人が見る画面**です。
+     都道府県とやりたいことを選び、締切までの残り日数まで見た直後なので、
+     「で、どこに頼めばいいのか」がその場にないと、読者は行き先を失います。
+     それなのに、この画面にだけ申込先がありませんでした。
+     ⚠ 詳細ページと**同じ作法**にそろえます：用途に合うものだけ・最大4件・
+     広告であることを明記・お支払い額は変わらないと明記・対象になる保証はしない。 */
+  const 用途ごとの窓口 = {}
+  for (const [用途, 中身] of Object.entries(用途と買えるもの)) {
+    用途ごとの窓口[用途] = 中身.窓口
+      .map(窓口を名前で引く)
+      .filter(Boolean)
+      .map(x => ({ 名前: x.名前, 会社: x.会社, 一言: x.一言, url: x.url, 計測: x.計測 ?? '' }))
+  }
+  const 窓口データ = JSON.stringify(用途ごとの窓口).replaceAll('</', '<\\/')
   const 全地域 = [...new Set(受付中.map(k => k.地域))].sort((a, b) => (b === '全国') - (a === '全国') || a.localeCompare(b, 'ja'))
 
   const 探すbody = `
@@ -656,13 +672,16 @@ ${引用の節}
 
   <p id="kensu" class="meta"></p>
   <div id="kekka"><p>読み込み中です…</p></div>
+  <section id="madoguchi" class="apply"></section>
 </article>
 <script type="application/json" id="hojo-data">${埋め込むデータ}</script>
+<script type="application/json" id="madoguchi-data">${窓口データ}</script>
 <p class="back"><a href="index.html">← 補助金の締切一覧</a>　<a href="../index.html">記事の一覧</a></p>
 
 <script>
 (function () {
   var 全部 = []
+  var 窓口表 = {}
   var 円 = function (n) { return '¥' + Number(n).toLocaleString('ja-JP') }
 
   // その日の0時を基準に数える。時刻で数えると、同じ日でも人によって1日ずれる
@@ -701,9 +720,55 @@ ${引用の節}
         }).join('')
       : '<p>この条件に当てはまる制度は、いま受付中のものにはありませんでした。' +
         '条件をゆるめるか、<a href="index.html">締切一覧</a>をご覧ください。</p>'
+
+    窓口を出す(該当, yoto)
+  }
+
+  /* 見つかった制度の用途に合う窓口だけを出す。
+     ⚠ 0件のときは出さない。申し込めるものが無いのに広告だけ並ぶのは、ただの邪魔。
+     ⚠ 4件まで。7つ並べると広告の一覧にしか見えず、どれも押されない（詳細ページと同じ考え方）。 */
+  function 窓口を出す(該当, 選んだ用途) {
+    var 枠 = document.getElementById('madoguchi')
+    if (!該当.length) { 枠.innerHTML = ''; return }
+
+    var 用途一覧 = 選んだ用途
+      ? [選んだ用途]
+      : 該当.slice(0, 20).reduce(function (acc, x) {
+          x.用.forEach(function (u) { if (acc.indexOf(u) < 0) acc.push(u) })
+          return acc
+        }, [])
+
+    var 出す = []
+    var 済み = {}
+    用途一覧.forEach(function (u) {
+      ;(窓口表[u] || []).forEach(function (w) {
+        if (!済み[w.名前] && 出す.length < 4) { 済み[w.名前] = 1; 出す.push(w) }
+      })
+    })
+    if (!出す.length) { 枠.innerHTML = ''; return }
+
+    枠.innerHTML =
+      '<h2>' + (選んだ用途 ? 選んだ用途 + 'ときの申込先' : '見積もりを取れる申込先') + '</h2>' +
+      '<p>申請の前にやってよいのは<strong>見積もりを取るところまで</strong>です。' +
+      '発注は交付決定の通知を受け取ってからにしてください。</p>' +
+      '<p class="note">下は広告です。ここから見積もりを依頼されると当サイトに紹介料が入りますが、' +
+      '<strong>お支払い額は変わりません。</strong>また、これらが' +
+      '<strong>上の補助金の対象になると保証するものではありません。</strong>' +
+      '対象になる経費は制度ごとに違いますので、必ず各制度の公式ページでご確認ください。</p>' +
+      出す.map(function (w) {
+        return '<div class="item">' +
+          '<h3>' + w.名前 + '</h3>' +
+          (w.会社 ? '<p class="price">' + w.会社 + '</p>' : '') +
+          (w.一言 ? '<p>' + w.一言 + '</p>' : '') +
+          '<p><a class="btn" href="' + w.url + '" target="_blank" rel="nofollow sponsored noopener">' +
+          w.名前 + 'に見積もりを頼む</a></p>' +
+          (w.計測 ? '<img src="' + w.計測 + '" width="1" height="1" alt="" style="border:0">' : '') +
+          '</div>'
+      }).join('')
   }
 
   全部 = JSON.parse(document.getElementById('hojo-data').textContent)
+  窓口表 = JSON.parse(document.getElementById('madoguchi-data').textContent)
   ;['ken', 'yoto', 'nokori'].forEach(function (id) {
     document.getElementById(id).addEventListener('change', 出す)
   })
