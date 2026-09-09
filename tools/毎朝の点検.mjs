@@ -303,22 +303,62 @@ if (!noteID) {
       出す('- ○ 公開されています。')
     }
 
-    // 毎日の記事から自動で作った note 用の下書きが、何本たまっているか。
-    // ⚠ **貼るのは人しかできない。**noteには外から投稿する仕組みが無いため、
-    //   在庫が増え続けるなら、増やす側ではなく貼る側が詰まっている。
+    // **書けているのに、まだ公開されていない記事が何本あるか。**
+    //
+    // ⚠ **2026-09-09、ここは間違ったものを数えていた。**
+    //   `note原稿/*.txt` のファイル数を「貼るのを待っている在庫」として数えていたが、
+    //   **noteの実物を見たら17本ともすでに下書きとして入っていた。**
+    //   手元のファイルは「作った控え」であって、noteに入っているかどうかとは無関係。
+    //   そのため毎朝「貼る側が詰まっています」と鳴り続け、本当の詰まりが隠れていた。
+    //   本当の詰まりは **下書きのまま公開されていないこと** だった。
+    //
+    // ⚠ **下書きは公開APIからは見えない**（ログインの内側）。だから
+    //   「手元にある記事」と「noteで公開ずみの記事」を突き合わせて、その差を出す。
+    //   差＝まだ外から読めない記事。**外から読めない記事は、無いのと同じ。**
     try {
-      const 在庫 = readdirSync('note原稿').filter((f) => /^20\d\d-/.test(f) && f.endsWith('.txt'))
-      if (在庫.length) {
-        出す(`- **貼るだけの下書きが ${在庫.length}本** たまっています（毎日の記事から自動で変換したもの）。`)
-        // 2026-09-09：ここは「1本ずつ貼る」と案内していたが、**もう1回で全部入る。**
-        //   noteのインポートは WordPress形式(.xml) を読む。毎朝 note原稿/note-import.xml に
-        //   全記事をまとめてあるので、**在庫が何本でも、人がやるのはファイルを1回選ぶだけ。**
-        //   古い案内のままだと16本を16回貼る仕事に見えて、誰も手を付けない。実際9日間そうなっていた。
-        出す(`  🔗 https://note.com/settings/import で \`note原稿/note-import.xml\` を選べば、**${在庫.length}本まとめて下書きに入ります**（操作は1回）。`)
-        出す('  入るのは下書きまでです。公開のクリックは常務が押してください。')
-        if (在庫.length >= 10) {
-          要対応.push(`note用の下書きが${在庫.length}本たまっています（書く側ではなく、貼る側が詰まっています）`)
+      const 公開ずみ = new Set()
+      for (let page = 1; page <= 5; page++) {
+        const rr = await fetch(
+          `https://note.com/api/v2/creators/${noteID}/contents?kind=note&page=${page}`,
+          { headers: { 'user-agent': 'office-choice-morning-check' } },
+        )
+        const jj = await rr.json()
+        const 並び = jj?.data?.contents ?? []
+        for (const c of 並び) 公開ずみ.add(String(c.name ?? '').trim())
+        if (!jj?.data?.isLastPage === false && 並び.length === 0) break
+        if (jj?.data?.isLastPage) break
+      }
+
+      const 手元 = readdirSync('記事')
+        .filter((f) => f.endsWith('.json'))
+        .map((f) => {
+          try {
+            return JSON.parse(readFileSync(join('記事', f), 'utf8'))
+          } catch {
+            return null
+          }
+        })
+        .filter(Boolean)
+
+      // 題は貼るときに手直しされることがあるので、記号と空白を落としてから比べる
+      const ならす = (t) => String(t ?? '').replace(/[\s　]/g, '').replace(/[（）()「」、。･・]/g, '')
+      const 公開ずみならし = new Set([...公開ずみ].map(ならす))
+      const 未公開 = 手元.filter((a) => !公開ずみならし.has(ならす(a.title)))
+
+      出す(`- 手元の記事：**${手元.length}本**　／　noteで公開ずみ：**${公開ずみ.size}本**`)
+      if (未公開.length) {
+        出す(`- **まだ公開されていない記事が ${未公開.length}本** あります。`)
+        出す('  🔗 https://note.com/notes を開くと下書きの一覧が出ます（「インポート」もこの画面です）。')
+        出す('  各記事の「公開に進む」を押すところだけが、人の手に残っています。')
+        出す('  ⚠ **押す前に、本文の数字・日付・リンクが残っているか目で見てください。**')
+        出す('  　（2026-08-31 の貼り付けでは、半角の数字と英字とURLが全部消えていました）')
+        if (未公開.length >= 5) {
+          要対応.push(
+            `note で公開されていない記事が${未公開.length}本（書けています。公開のクリックだけが残っています）`,
+          )
         }
+      } else {
+        出す('- ○ 手元の記事は、すべて公開ずみです。')
       }
     } catch {}
   } catch (e) {
