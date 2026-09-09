@@ -33,7 +33,20 @@ switch -Wildcard ($どれ) {
   '*紹介*'         { $file = Join-Path $ここ '会員向け\00_紹介記事_無料公開.txt';                $題名から本文 = $true  }
   '*ホームページ*' { $file = Join-Path $ここ 'note原稿\01_補助金でホームページを作る.txt';        $題名から本文 = $true  }
   '*説明*'         { $file = Join-Path $ここ '会員向け\00_メンバーシップ説明_note用.txt';          $題名から本文 = $false }
-  default { Write-Host "「レポート」「紹介」「ホームページ」「説明」のどれかを指定してください。" -ForegroundColor Yellow; exit 1 }
+  '*記事*'         {
+      # 毎日の記事から自動で作られた note 用の下書きのうち、いちばん古い未投稿のもの。
+      # ⚠ 古い順に出すこと。新しい順だと、いつまでも同じ数の在庫が残る。
+      $候補 = Get-ChildItem (Join-Path $ここ 'note原稿') -Filter '20*.txt' -ErrorAction SilentlyContinue | Sort-Object Name
+      if (-not $候補) {
+        Write-Host "note用の下書きがありません。先に  node tools
+oteの下書きを作る.mjs  を走らせてください。" -ForegroundColor Yellow
+        exit 1
+      }
+      $file = $候補[0].FullName
+      $題名から本文 = $true
+      Write-Host ("在庫 {0}本。いちばん古いものを出します： {1}" -f $候補.Count, $候補[0].Name) -ForegroundColor Cyan
+  }
+  default { Write-Host "「レポート」「紹介」「ホームページ」「説明」「記事」のどれかを指定してください。" -ForegroundColor Yellow; exit 1 }
 }
 
 if (-not (Test-Path $file)) {

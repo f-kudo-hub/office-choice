@@ -118,10 +118,10 @@ IT導入補助金で補助されるのは、登録された事業者が提供す
 登録も入力も要りません。無料です。
 
 ▼ 補助金チェッカー（都道府県とやりたいことから探す）
-https://f-kudo-hub.github.io/office-choice/hojo/checker.html
+https://soumu-choice.com/hojo/checker.html
 
 ▼ いま受付中の補助金の締切一覧
-https://f-kudo-hub.github.io/office-choice/hojo/
+https://soumu-choice.com/hojo/
 
 1件ずつのページに、補助率と上限額から逆算した自己負担の目安と、
 締切から逆算した「いつ動き出すか」の日付を載せています。
@@ -129,7 +129,7 @@ https://f-kudo-hub.github.io/office-choice/hojo/
 この記事の詳しい版（見積もりの確認項目のチェックリスト付き）はこちらです。
 
 ▼ 補助金でホームページを作る前に
-https://f-kudo-hub.github.io/office-choice/kiji/subsidy-website-what-you-can-use.html
+https://soumu-choice.com/kiji/subsidy-website-what-you-can-use.html
 
 
 ━━━━━━━━━━━━━━━━

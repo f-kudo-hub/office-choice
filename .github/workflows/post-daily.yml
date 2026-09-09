@@ -113,6 +113,14 @@ jobs:
           TOPIC: ${{ github.event.inputs.topic || '' }}
         run: node "tools/記事を作る.mjs" --本数="$COUNT"
 
+      # 書いた記事を、そのまま note に貼れる形にしておきます。
+      # ⚠ **サイトに出すだけでは1円にもなりません。**お金が発生するのは
+      #   noteのメンバーシップ側で、そこには外から投稿する仕組みがありません。
+      #   だから「貼るだけ」の形まで自動で作り、人の手は1日1回の貼り付けだけにします。
+      - name: noteの下書きに変換する
+        if: ${{ !cancelled() && steps.today.outputs.skip != 'true' }}
+        run: node "tools/noteの下書きを作る.mjs"
+
       # 記事が書けなくても、既存の記事からサイトは作り直します。
       # 設定（Amazonのタグなど）だけ変えた回も、これで全ページに反映されます。
       - name: サイトを組み立てる

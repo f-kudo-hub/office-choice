@@ -17,7 +17,7 @@
  * 結果は 00_点検結果.md に書き出します（このリポジトリの中。作業場には書きません）
  */
 import { execSync } from 'node:child_process'
-import { writeFileSync, readFileSync } from 'node:fs'
+import { writeFileSync, readFileSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -302,6 +302,20 @@ if (!noteID) {
     } else {
       出す('- ○ 公開されています。')
     }
+
+    // 毎日の記事から自動で作った note 用の下書きが、何本たまっているか。
+    // ⚠ **貼るのは人しかできない。**noteには外から投稿する仕組みが無いため、
+    //   在庫が増え続けるなら、増やす側ではなく貼る側が詰まっている。
+    try {
+      const 在庫 = readdirSync('note原稿').filter((f) => /^20\d\d-/.test(f) && f.endsWith('.txt'))
+      if (在庫.length) {
+        出す(`- **貼るだけの下書きが ${在庫.length}本** たまっています（毎日の記事から自動で変換したもの）。`)
+        出す('  1本だけ出すには：`.\tools\noteに貼る準備.ps1 記事`（古い順に1本、クリップボードへ）')
+        if (在庫.length >= 10) {
+          要対応.push(`note用の下書きが${在庫.length}本たまっています（書く側ではなく、貼る側が詰まっています）`)
+        }
+      }
+    } catch {}
   } catch (e) {
     // **読めなかった日を「0本」と混同しない。**無事と、確かめられなかったは別物
     出す(`- note の公開状況を確かめられませんでした（${e.message}）。**0本という意味ではありません。**`)
