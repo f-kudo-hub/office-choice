@@ -117,6 +117,13 @@ jobs:
       # ⚠ **サイトに出すだけでは1円にもなりません。**お金が発生するのは
       #   noteのメンバーシップ側で、そこには外から投稿する仕組みがありません。
       #   だから「貼るだけ」の形まで自動で作り、人の手は1日1回の貼り付けだけにします。
+      # まとめて入れる形（WordPress WXR）も毎日作り直します。
+      # noteのインポートはこの形を受け付けるので、何本でも一度に入ります
+      #（入ったものは下書きになります。公開のクリックは人が押します）。
+      - name: noteにまとめて入れる形を作る
+        if: ${{ !cancelled() && steps.today.outputs.skip != 'true' }}
+        run: node "tools/noteにまとめて入れる形を作る.mjs"
+
       - name: noteの下書きに変換する
         if: ${{ !cancelled() && steps.today.outputs.skip != 'true' }}
         run: node "tools/noteの下書きを作る.mjs"
