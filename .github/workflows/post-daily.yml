@@ -1,0 +1,163 @@
+# 毎日の記事投稿
+#
+# 毎朝7時（日本時間）に、記事を1本書いてサイトに公開します。
+#
+# 2026-09-01 常務のご指示「副業は毎日動かしてね！」により、週1回から毎日へ。
+# **枠は3本置いています。**GitHubの定期実行は混んでいると枠ごと捨てられるためです
+# （別のリポジトリで2日続けて起きた実績があります）。
+# 同じ日に2本目・3本目が起きても、その日すでに書いていれば何もせずに終わります。
+# GitHubのサーバーで動くので、PCの電源が入っていなくても実行されます。
+#
+# 動くために必要なもの（1回だけの設定）：
+#   Settings → Secrets and variables → Actions → New repository secret
+#     名前: ANTHROPIC_API_KEY
+#     値  : Anthropicのコンソールで作ったAPIキー
+#
+# 手で試すとき：Actions タブ → 毎日の記事投稿 → Run workflow
+#
+# ⚠️ このファイルの「名前」は英字にしてあります（2026-08-31）。
+#    もとは inputs が「本数」という日本語で、GitHubがファイルを読めず、
+#    ワークフロー名がパスのまま表示されていました（＝定期実行が動かない状態）。
+#    **識別子は英字。日本語でよいのは description と name の中身だけです。**
+#    ファイル名も英字に変えました。壊れた初回pushのあとは、
+#    同じパスのままだと定期実行が登録され直さないためです。
+
+name: 毎日の記事投稿
+
+on:
+  schedule:
+    # 日本時間の毎朝7時ちょうどに出したい。UTC 22:00 ＝ 翌日の日本時間7:00。
+    # **枠を3本置いています。**GitHubの定期実行は遅れるだけでなく、
+    # 混んでいると枠ごと捨てられます。1本だけだと、捨てられた日は何も出ません。
+    # 分をぞろ目から外しているのは、0分・30分に世界中の予約が集中するためです。
+    # （※定期実行は既定ブランチでのみ動きます。GitHubの仕様です）
+    - cron: "37 21 * * *"
+    - cron: "52 21 * * *"
+    - cron: "07 22 * * *"
+  workflow_dispatch:
+    inputs:
+      count:
+        description: "今回作る記事の本数"
+        required: false
+        default: "1"
+      # 識別子は英字にすること。日本語にするとGitHubがファイルを読めなくなり、
+      # ワークフローごと止まります（2026-08-31 に実際に起きました）
+      topic:
+        description: "題材の指定（空ならAIが自分で選びます）"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+# 前の回が終わる前に次が始まると、記事が二重に増えます。
+concurrency:
+  group: daily-post
+  cancel-in-progress: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    # まとめて書く回（本数を増やしたとき）は1本ずつ順に書くので、
+    # 30分では途中で切られます。1本あたり数分をみて長めに取ります。
+    timeout-minutes: 90
+
+    steps:
+      - name: 作業場を取り出す
+        uses: actions/checkout@v4
+        with:
+          # 「今日すでに書いたか」を git log で見るので、履歴が要ります。
+          # 既定の浅い取り出し（1コミット分）だと、いつも「書いていない」になります
+          fetch-depth: 0
+
+      # **枠が3本あるので、その日すでに書いていたら何もしない。**
+      # concurrency は「同時に走る」のは防げますが、時間差で走る2本目・3本目は
+      # 前の回が終わっているため素通りします。日付で見張るのはそのためです。
+      # 手で走らせたとき（workflow_dispatch）は、この見張りを通しません。
+      - name: 今日すでに書いたかを見る
+        id: today
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "skip=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          TODAY=$(TZ=Asia/Tokyo date +%F)
+          # ⚠ **見るのは `記事` だけ。`docs` を見てはいけません**（2026-09-07 に直した）。
+          #   `docs` は組み立て後のサイトなので、**補助金カレンダーの更新も毎朝ここを書き換えます。**
+          #   補助金は6時、記事は7時の予定で、実際もGitHubの遅れで補助金が先に着きます。
+          #   そのため「今日 docs が変わったか」で見ると、**毎日かならず変わっている**ことになり、
+          #   記事側は毎朝「もう書いた」と判断して素通りしていました。
+          #   9/4〜9/7 の4日間、実行は毎日 success なのに記事が1本も増えませんでした。
+          #   **記事を書くのは、この仕事だけが `記事` に置きます。**だからそこを見ます。
+          if git log --since="$TODAY 00:00 +0900" --oneline -- 記事 | grep -q .; then
+            echo "  $TODAY はすでに書いています。何もしません。"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Node を用意する
+        if: steps.today.outputs.skip != 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: 部品を入れる
+        if: steps.today.outputs.skip != 'true'
+        run: npm install --no-audit --no-fund
+
+      - name: 記事を書く
+        if: steps.today.outputs.skip != 'true'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          COUNT: ${{ github.event.inputs.count || '1' }}
+          TOPIC: ${{ github.event.inputs.topic || '' }}
+        run: node "tools/記事を作る.mjs" --本数="$COUNT"
+
+      # 書いた記事を、そのまま note に貼れる形にしておきます。
+      # ⚠ **サイトに出すだけでは1円にもなりません。**お金が発生するのは
+      #   noteのメンバーシップ側で、そこには外から投稿する仕組みがありません。
+      #   だから「貼るだけ」の形まで自動で作り、人の手は1日1回の貼り付けだけにします。
+      # まとめて入れる形（WordPress WXR）も毎日作り直します。
+      # noteのインポートはこの形を受け付けるので、何本でも一度に入ります
+      #（入ったものは下書きになります。公開のクリックは人が押します）。
+      - name: noteにまとめて入れる形を作る
+        if: ${{ !cancelled() && steps.today.outputs.skip != 'true' }}
+        run: node "tools/noteにまとめて入れる形を作る.mjs"
+
+      - name: noteの下書きに変換する
+        if: ${{ !cancelled() && steps.today.outputs.skip != 'true' }}
+        run: node "tools/noteの下書きを作る.mjs"
+
+      # 記事が書けなくても、既存の記事からサイトは作り直します。
+      # 設定（Amazonのタグなど）だけ変えた回も、これで全ページに反映されます。
+      - name: サイトを組み立てる
+        if: ${{ !cancelled() && steps.today.outputs.skip != 'true' }}
+        run: node "tools/サイトを組み立てる.mjs"
+
+      # **公開してから知らせる。**先に知らせても、検索側が見に来たとき
+      # まだ新しいページが無い（鍵ファイルも読めない）ので意味がない。
+      - name: 公開する
+        if: ${{ !cancelled() && steps.today.outputs.skip != 'true' }}
+        run: |
+          git config user.name  "毎日の記事投稿"
+          git config user.email "noreply@github.com"
+          git add 記事 docs データ
+          if git diff --cached --quiet; then
+            echo "変化なし。公開しません。"
+            exit 0
+          fi
+          git commit -m "毎日の記事投稿：$(TZ=Asia/Tokyo date '+%Y-%m-%d')"
+          for i in 1 2 3 4; do
+            git pull --rebase origin "${GITHUB_REF_NAME}" || true
+            git push origin "HEAD:${GITHUB_REF_NAME}" && exit 0
+            echo "送信に失敗。${i}回目の待機。"; sleep $((2 ** i))
+          done
+          exit 1
+
+      # 公開が終わってから、検索エンジンに「見に来て」と伝える。
+      # Bing / Yandex 向け（Googleは非対応。Google向けは Search Console が要る）。
+      # **失敗しても記事の公開は取り消さない。**知らせの失敗で投稿をなかったことにしない。
+      - name: 検索エンジンに知らせる（IndexNow）
+        if: ${{ !cancelled() && steps.today.outputs.skip != 'true' }}
+        continue-on-error: true
+        run: node "tools/検索エンジンに知らせる.mjs"

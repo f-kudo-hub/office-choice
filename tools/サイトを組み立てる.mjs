@@ -20,6 +20,7 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync, rmSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
+import { 補助金ページ一式を作る } from './補助金のページを作る.mjs'
 
 const ここ = dirname(fileURLToPath(import.meta.url))
 const 作業場 = join(ここ, '..')
@@ -97,6 +98,144 @@ const 広告の1行を作る = 記事 => {
     : '<p class="ad-notice">この記事の商品リンクはAmazonの検索結果へのリンクです（現在、アフィリエイトの提携はありません）。</p>'
 }
 
+/**
+ * 月額のご案内。
+ * ---------------------------------------------------------------------------
+ * **補助金のページにだけ出します。**記事のページには出しません。
+ * 補助金を見に来た方は「締切を見逃したくない」と思って来ています。
+ * そこにだけ置くのが、いちばん自然で、いちばん効きます。
+ *
+ * **設定に note のURLが無ければ、何も出しません。**
+ * 「準備中」と出すくらいなら、出さないほうがよい。
+ */
+/**
+ * ⚠ **2026-09-07、ここは一度も表示されていませんでした。**
+ * 条件が `type !== '補助金'` でしたが、補助金のページは `type: '記事'` か type なしで
+ * 作られています。**どのページにも当てはまらず、書いた日からずっと空文字を返していた。**
+ * ビルドは通り、画面も壊れず、エラーも出ないので、誰にも気づけない壊れ方でした。
+ * **「置いた」と「出ている」は別物です。**置いたら、実際に出ているかを数えること。
+ * いまは呼ぶ側が `案内を出す: true` と明示します（type に頼らない）。
+ */
+function 月額のご案内(案内を出す) {
+  const url = (設定['noteマガジンURL'] ?? '').trim()
+  if (!url || !案内を出す) return ''
+  return `
+<aside class="offer">
+  <p class="offer-lead">締切を見逃さないために</p>
+  <p>受付中の補助金を<strong>毎月まとめて</strong>お届けしています。締切の近い順に並べ、公式ページへの直リンク付き。</p>
+  <p><a class="offer-btn" href="${e(url)}" target="_blank" rel="noopener">月額の購読を見る</a></p>
+  <p class="small">出典はデジタル庁「Jグランツ」の公開データです。まず無料の号をご覧いただけます。</p>
+</aside>`
+}
+
+/**
+ * 無料の「締切アラート」登録口（名簿を作る階）
+ * ---------------------------------------------------------------------------
+ * **これが計画の①です。**アフィリエイトは単発報酬で積み上がりません。
+ * 積み上がるのは名簿だけです。補助金を見に来た方は「締切を見逃したくない」と
+ * 思って来ているので、**その場が唯一いちばん自然な登録口**になります。
+ *
+ * ⚠ **登録先が設定に無ければ、ページも案内も出しません。**
+ * 「準備中」のフォームほど信用を落とすものはない（月額のご案内と同じ考え方）。
+ *
+ * 設定.json：
+ *   "締切アラート_GoogleフォームURL": "https://docs.google.com/forms/d/e/.../viewform"
+ *       … いちばん良い形。ページの中に埋め込みます（登録者は名簿として残ります）
+ *   "締切アラート_受付メール": "you@example.com"
+ *       … フォームが無いときの控え。メールソフトが開くだけなので取りこぼしますが、
+ *         **アカウントを1つも作らずに今日から動きます。**
+ * 両方あるときはフォームを使います。
+ */
+const アラート登録先 = () => {
+  const form = (設定['締切アラート_GoogleフォームURL'] ?? '').trim()
+  if (form) return { 種類: 'フォーム', url: form }
+  const mail = (設定['締切アラート_受付メール'] ?? '').trim()
+  if (mail) return { 種類: 'メール', url: mail }
+  return null
+}
+
+/** Googleフォームは ?embedded=true を付けると枠だけになる（公式の作法） */
+const 埋め込みURL = u => u + (u.includes('?') ? '&' : '?') + 'embedded=true'
+
+const メールの下書き = mail => {
+  const 件名 = '締切アラートの登録'
+  const 本文 = [
+    '「オフィスの選びかた」の締切アラートに登録します。',
+    '',
+    '会社名：',
+    '都道府県：',
+    '従業員数：',
+    '興味のある使いみち（設備投資 / IT導入 / 販路拡大 / 人材・研修 / 省エネ など）：',
+    '',
+    '※このまま送信していただければ登録します。',
+  ].join('\n')
+  return `mailto:${mail}?subject=${encodeURIComponent(件名)}&body=${encodeURIComponent(本文)}`
+}
+
+/** 補助金のページの下に出す、無料アラートへの短い案内 */
+function 無料アラートのご案内(案内を出す) {
+  const 先 = アラート登録先()
+  if (!先 || !案内を出す) return ''
+  return `
+<aside class="offer">
+  <p class="offer-lead">締切を見逃さないために（無料）</p>
+  <p>お住まいの都道府県と会社の規模を教えていただければ、<strong>使えそうな補助金の締切が近づいたときだけ</strong>お知らせします。毎朝データを取り直しているので、締切の変更もそのまま反映されます。</p>
+  <p><a class="offer-btn" href="{{ROOT}}alert/index.html">無料の締切アラートに登録する</a></p>
+  <p class="small">費用はかかりません。配信は止められます。お名前と会社名は必須ではありません。</p>
+</aside>`
+}
+
+/** 登録口そのもののページ */
+function アラート登録ページ(受付中) {
+  const 先 = アラート登録先()
+  if (!先) return null
+
+  const 入口 =
+    先.種類 === 'フォーム'
+      ? `<div class="formwrap">
+  <iframe src="${e(埋め込みURL(先.url))}" width="100%" height="760" frameborder="0" marginheight="0" marginwidth="0" title="締切アラートの登録フォーム">読み込んでいます…</iframe>
+</div>
+<p class="small">フォームが表示されない場合は <a href="${e(先.url)}" target="_blank" rel="noopener">こちらから直接ご登録</a>いただけます。</p>`
+      : `<p><a class="offer-btn" href="${e(メールの下書き(先.url))}">メールで登録する</a></p>
+<p class="small">ボタンを押すと、メールソフトが下書きを開きます。<strong>中身を埋めて送信していただくだけ</strong>で登録は完了です。こちらから確認のご返信をお送りします。</p>`
+
+  const body = `
+<article>
+<h1>補助金の締切アラート（無料）</h1>
+
+<p class="lede">受付中の補助金は、いま <strong>${受付中}件</strong>あります。そのうち<strong>締切に間に合うもの</strong>は、会社の場所と規模によって変わります。ご登録いただければ、<strong>あてはまるものの締切が近づいたときだけ</strong>お知らせします。</p>
+
+<h2>お送りするもの</h2>
+<ul>
+  <li><strong>締切の近づいたお知らせ</strong>— 対象になりそうなものだけ。締切の30日前と7日前</li>
+  <li><strong>今月の補助金レポート</strong>— 受付中のものを締切順に並べた一覧（毎月1回）</li>
+  <li><strong>新しく出た制度のお知らせ</strong>— その月に受付が始まったもの</li>
+</ul>
+
+<h2>お送りしないもの</h2>
+<ul>
+  <li>営業のご連絡、他社へのお客様情報の提供は<strong>いたしません</strong></li>
+  <li>申請の代行は行いません（有償の申請代行は行政書士の業務です）。お出しするのは<strong>締切と条件の情報まで</strong>です</li>
+</ul>
+
+<h2>情報の出どころ</h2>
+<p>デジタル庁「Jグランツ」の公開API（公的な一次情報）です。まとめサイトの写しではありません。<strong>毎朝取り直しています。</strong>制度の中身はこちらで言い換えていませんので、申請の前には必ず各制度の公式ページをご確認ください。</p>
+
+<h2>ご登録</h2>
+${入口}
+
+<p class="small">配信の停止はいつでもできます。いただいた情報は、補助金のお知らせをお送りする目的にのみ使います。</p>
+</article>
+`
+  return ページ({
+    title: `補助金の締切アラート（無料）｜${サイト名}`,
+    description: `受付中${受付中}件の補助金から、お使いになれそうなものの締切が近づいたときだけお知らせします。デジタル庁の公開データを毎朝取り直しています。登録は無料です。`,
+    body,
+    root: '../',
+    canonical: 公開URL ? `${公開URL}/alert/` : '',
+  })
+}
+
 const 下の帯 = `
 <footer class="foot">
   <p><a href="{{ROOT}}index.html">${e(サイト名)}</a> ・ <a href="{{ROOT}}disclosure.html">広告と免責について</a></p>
@@ -113,6 +252,33 @@ const 下の帯 = `
  * **本文に無いことを書かない。**タイトル・説明・FAQは、実際にページに出ている
  * ものだけをそのまま入れる（構造化データだけ盛るのは、検索側のガイドライン違反）。
  */
+/**
+ * アクセス解析のタグ。
+ * ---------------------------------------------------------------------------
+ * **これが無いと、誰も見ていないのか、見られているのに売れないのかが分かりません。**
+ * 2026-09-01 常務のご指示「AI業務でこれだけ稼げるを実証したい。結果を重視したい」。
+ * 数えられないものは、実証できません。
+ *
+ * 設定.json に測定IDを書けば入ります。**書いていなければ何も入りません**
+ * （空のタグを出すと、あとで「入れたのに動かない」と悩むので、いっそ出しません）。
+ *
+ *   "GA測定ID": "G-XXXXXXXXXX"       … Google Analytics
+ *   "Clarity ID": "xxxxxxxxxx"       … Microsoft Clarity（無料・ヒートマップが見られる）
+ */
+function アクセス解析() {
+  const 出 = []
+  const ga = (設定['GA測定ID'] ?? '').trim()
+  if (ga) {
+    出.push(`<script async src="https://www.googletagmanager.com/gtag/js?id=${ga}"></script>`)
+    出.push(`<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','${ga}')</script>`)
+  }
+  const cl = (設定['ClarityID'] ?? '').trim()
+  if (cl) {
+    出.push(`<script>(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y)})(window,document,"clarity","script","${cl}")</script>`)
+  }
+  return 出.join(String.fromCharCode(10))
+}
+
 function 構造化データ({ type, title, description, canonical, published, faq }) {
   if (!canonical) return ''
   const 物 = []
@@ -158,7 +324,7 @@ function 構造化データ({ type, title, description, canonical, published, fa
     .join('\n')
 }
 
-function ページ({ title, description, body, root, canonical, type, published, faq }) {
+function ページ({ title, description, body, root, canonical, type, published, faq, 案内を出す }) {
   return `<!doctype html>
 <html lang="ja">
 <head>
@@ -175,6 +341,7 @@ ${canonical ? `<meta property="og:url" content="${e(canonical)}">` : ''}
 <meta name="twitter:card" content="summary">
 ${構造化データ({ type, title, description, canonical, published, faq })}
 <link rel="stylesheet" href="${root}style.css">
+${アクセス解析()}
 </head>
 <body>
 <header class="head">
@@ -183,6 +350,8 @@ ${構造化データ({ type, title, description, canonical, published, faq })}
 </header>
 <main>
 ${body}
+${無料アラートのご案内(案内を出す).replaceAll('{{ROOT}}', root)}
+${月額のご案内(案内を出す)}
 </main>
 ${下の帯.replaceAll('{{ROOT}}', root)}
 </body>
@@ -233,6 +402,26 @@ function 記事ページ(k) {
   </section>`
     : ''
 
+  /**
+   * 関連ページ（記事JSONの links）。**本文の中にリンクは書けません。**
+   * 本文は丸ごと文字として扱う（HTMLを書けると、書き手が壊せてしまう）ため、
+   * 「詳しくはこちら」を本文に書いても、ただの文字列になって押せません。
+   * リンクにしたいものは、ここに分けて置きます。
+   */
+  const 関連 = (k.links ?? []).filter(x => x && x.url && x.name)
+  const 関連の節 = 関連.length
+    ? `
+  <section id="related">
+    <h2>あわせて使えるもの</h2>
+    ${関連
+      .map(x => `<div class="item">
+  <h3><a href="${e(x.url)}">${e(x.name)}</a></h3>
+  <p>${e(x.why ?? '')}</p>
+</div>`)
+      .join('')}
+  </section>`
+    : ''
+
   const 確認 = k.checklist.map(c => `<li>${e(c)}</li>`).join('')
   const 質問 = k.faq.map(f => `<div class="qa"><h3>${e(f.q)}</h3><p>${e(f.a)}</p></div>`).join('\n')
 
@@ -257,6 +446,7 @@ function 記事ページ(k) {
     ${商品}
   </section>
   ${申込先の節}
+  ${関連の節}
 
   <section>
     <h2>よくある質問</h2>
@@ -278,7 +468,49 @@ function 記事ページ(k) {
 }
 
 // ── 一覧ページ ────────────────────────────────────────────────────
-function 一覧ページ() {
+/**
+ * 補助金の締切一覧への案内。
+ * **トップから1クリックで行けないページは、無いのと同じです。**
+ * 検索から直接ページに来た人にも、サイト全体で何をやっているかが伝わるように置きます。
+ */
+const 補助金への案内 = (受付中, 間近 = [], 分布 = []) => {
+  if (!受付中) return ''
+  /* 締切までの残り日数の分布。**「147件あります」は多さの自慢にしかならない。**
+     「30日以内に締切が12件ある」と言えば、読む人は自分の予定と照らせる。 */
+  const 最大 = Math.max(1, ...分布.map(x => x.件数))
+  const 分布の図 = 分布.length
+    ? `<figure class="fig">
+      <svg viewBox="0 0 600 ${40 + 分布.length * 34}" role="img" aria-label="締切までの残り日数ごとの件数。${分布.map(x => `${x.名}が${x.件数}件`).join('、')}。">
+        <text x="0" y="16" font-size="12.5" fill="var(--sub)">締切までの残り日数（受付中 ${受付中}件）</text>
+${分布.map((x, i) => {
+  const y = 34 + i * 34
+  const w = Math.max(2, Math.round(430 * (x.件数 / 最大)))
+  return `        <text x="0" y="${y + 15}" font-size="13" fill="var(--sub)">${e(x.名)}</text>
+        <rect x="112" y="${y + 3}" width="430" height="16" rx="3" fill="var(--line)"></rect>
+        <rect class="bar" x="112" y="${y + 3}" width="${w}" height="16" rx="3" fill="var(--accent)"></rect>
+        <text x="600" y="${y + 15}" text-anchor="end" font-size="13" font-weight="700" fill="var(--ink)">${x.件数}件</text>`
+}).join('')}
+      </svg>
+      <figcaption>デジタル庁「Jグランツ」の公開データから、中小企業が使えるものだけを抜き出して数えています。毎朝取り直しています。</figcaption>
+    </figure>`
+    : ''
+  /* 締切がいちばん近い5件。**件数より、名前のほうが自分ごとになる。** */
+  const 間近の表 = 間近.length
+    ? `<ul class="soon">
+${間近.map(k => `      <li><span class="d">あと${k.日数}日</span><a href="${e(k.先)}">${e(k.名称)}</a><span class="pl">${e(k.地域 || '全国')}</span></li>`).join('')}
+    </ul>`
+    : ''
+  return `<section class="lead-in">
+  <h2><a href="hojo/index.html">いま受付中の補助金の締切一覧（${受付中}件）</a></h2>
+  <p>デジタル庁「Jグランツ」の公開データから、中小企業の設備投資・IT導入・販路拡大・職場環境の改善に使えるものだけを抜き出しています。1件ずつのページに、<strong>自己負担の目安</strong>と、<strong>締切から逆算した段取り</strong>をまとめました。毎朝更新しています。</p>
+  ${分布の図}
+  <h3 class="soon-h">締切がいちばん近いもの</h3>
+  ${間近の表}
+  <p><a href="hojo/index.html">▸ 受付中の${受付中}件をすべて見る</a>　／　<a href="hojo/checker.html"><strong>都道府県とやりたいことから探す（登録不要）</strong></a></p>
+</section>`
+}
+
+function 一覧ページ(補助金の受付中, 間近, 分布) {
   const 中身 = 記事一覧.length
     ? 記事一覧
         .map(
@@ -295,9 +527,10 @@ function 一覧ページ() {
   return ページ({
     title: `${サイト名}｜${設定.サイトの説明}`,
     description: 設定.サイトの説明,
-    body: `<h1 class="sr">記事の一覧</h1>\n<ul class="cards">\n${中身}\n</ul>`,
+    body: `<h1 class="sr">記事の一覧</h1>\n${補助金への案内(補助金の受付中, 間近, 分布)}\n<ul class="cards">\n${中身}\n</ul>`,
     root: './',
-    canonical: 公開URL ? `${公開URL}/` : ''
+    canonical: 公開URL ? `${公開URL}/` : '',
+    案内を出す: true
   })
 }
 
@@ -380,6 +613,89 @@ li{margin:.3rem 0}
 .foot{max-width:44rem;margin:0 auto;padding:1.6rem 1.2rem 3rem;border-top:1px solid var(--line);color:var(--sub);font-size:.84rem}
 .foot p{margin:.3rem 0}
 .small{font-size:.78rem}
+/* 図（数字を帯で見せる）。**画像ファイルは使わずSVGを直接書く。**
+   写真を足すと表示が遅くなり、Core Web Vitals が落ちて検索に不利になるため。
+   色はすべて上の変数なので、ダークモードでもそのまま合う。 */
+.fig{margin:1.4rem 0;padding:1rem 1.1rem .9rem;border:1px solid var(--line);border-radius:8px;background:var(--card)}
+.fig svg{display:block;width:100%;height:auto}
+.fig figcaption{color:var(--sub);font-size:.78rem;margin:.55rem 0 0;line-height:1.7}
+/* 帯は左から伸びる。**動きを控える設定の人には出さない**（検索から来た人は答えを探しに来ている） */
+.fig .bar{transform-box:fill-box;transform-origin:left center;animation:figgrow .85s cubic-bezier(.2,.7,.3,1) both}
+@keyframes figgrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@media (prefers-reduced-motion:reduce){.fig .bar{animation:none}}
+/* 締切がいちばん近いもの。**件数より、名前のほうが自分ごとになる。** */
+.soon-h{font-size:.95rem;margin:1.6rem 0 .4rem;border:0;padding:0}
+.soon{list-style:none;padding:0;margin:0}
+.soon li{display:flex;gap:.7rem;align-items:baseline;flex-wrap:wrap;padding:.6rem 0;border-bottom:1px solid var(--line);font-size:.92rem}
+.soon li:last-child{border-bottom:0}
+.soon .d{flex:none;min-width:5.2em;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums}
+.soon a{flex:1 1 14em;color:var(--ink)}
+.soon .pl{flex:none;color:var(--sub);font-size:.8rem;max-width:9em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ── 補助金のページ ───────────────────────────────────────── */
+.crumb{font-size:.84rem;color:var(--sub);margin:1.4rem 0 0}
+.note{font-size:.86rem;color:var(--sub)}
+.spec{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.92rem}
+.spec th,.spec td{border:1px solid var(--line);padding:.55rem .7rem;text-align:left;vertical-align:top}
+.spec th{background:var(--card);color:var(--sub);font-weight:600;width:11rem}
+/* **狭い画面では、見出しと中身を上下に積む。**
+   390pxで2列のまま出すと、見出しの幅が縮んで「実施機関」が
+   実／施／機／関 と1文字ずつ縦に割れる（日本語は語の途中でも改行されるため）。
+   幅を auto にするだけでは直らない。列をやめて積むのが確実。 */
+@media (max-width:560px){
+  .spec{font-size:.88rem}
+  .spec:not(.list),.spec:not(.list) tbody,.spec:not(.list) tr,.spec:not(.list) th,.spec:not(.list) td{display:block;width:auto}
+  .spec:not(.list) tr{border:1px solid var(--line);border-radius:8px;margin:.6rem 0;padding:.5rem .8rem;background:var(--card)}
+  .spec:not(.list) th{border:0;padding:0;font-size:.78rem;white-space:nowrap;background:none}
+  .spec:not(.list) td{border:0;padding:.1rem 0 .1rem;background:var(--bg)}
+}
+.spec.list th{width:auto}
+.spec.list td:first-child{white-space:nowrap;width:6.5rem}
+/* **3列の表は、狭い画面ではカードにする。**390pxで3列のまま出すと
+   制度名が1文字ずつ折れて読めなくなる。横スクロールには逃がさない */
+@media (max-width:560px){
+  .spec.list,.spec.list tbody,.spec.list tr,.spec.list td{display:block;width:auto}
+  .spec.list tr:first-child{display:none}
+  .spec.list tr{border:1px solid var(--line);border-radius:8px;margin:.7rem 0;padding:.6rem .8rem;background:var(--card)}
+  .spec.list td{border:0;padding:.15rem 0}
+  .spec.list td:first-child{white-space:normal;width:auto;color:var(--sub);font-size:.84rem}
+  /* 改行をやめる代わりに中黒で区切る。「2026-09-07あと7日」と続けて読ませない */
+  .spec.list td:first-child br{display:none}
+  .spec.list td:first-child .small::before{content:"・"}
+  .spec.list td:nth-child(2){font-size:.95rem;margin:.2rem 0}
+  .spec.list td:last-child{color:var(--sub);font-size:.84rem}
+}
+.closed{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--sub);padding:.8rem 1rem;margin:1.2rem 0;font-size:.92rem}
+.urgent{background:var(--card);border:1px solid var(--line);border-left:3px solid #c0392b;padding:.8rem 1rem;margin:1.2rem 0;font-size:.95rem}
+.ok{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);padding:.8rem 1rem;margin:1.2rem 0;font-size:.95rem}
+blockquote{margin:1rem 0;padding:.2rem 0 .2rem 1rem;border-left:3px solid var(--line);color:var(--sub)}
+blockquote p{margin:0}
+.lead-in{border:1px solid var(--line);border-radius:8px;background:var(--card);padding:1rem 1.2rem;margin:1.8rem 0 0}
+.lead-in h2{border:0;padding-top:0;margin:0 0 .4rem;font-size:1.1rem}
+.lead-in h2 a{text-decoration:none}
+.lead-in p{margin:0;font-size:.9rem}
+.lead-in-mini{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:6px;padding:.7rem .9rem;font-size:.95rem}
+.lead-in-mini a{text-decoration:none}
+
+/* ── 探す道具 ─────────────────────────────────────────────── */
+.pick{display:flex;flex-wrap:wrap;gap:.8rem;margin:1.6rem 0}
+.pick label{display:flex;flex-direction:column;gap:.25rem;font-size:.82rem;color:var(--sub);flex:1 1 10rem;min-width:0}
+/* **入力欄は16px以上。**これより小さいとiPhoneが勝手に画面を拡大する */
+.pick select{font-size:16px;padding:.5rem .6rem;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);width:100%}
+.hit{border:1px solid var(--line);border-radius:8px;padding:.8rem 1rem;margin:.8rem 0;background:var(--card)}
+.hit.soon{border-left:3px solid #c0392b}
+.hit h2{border:0;padding-top:0;margin:.2rem 0 .4rem;font-size:1.05rem}
+.hit h2 a{color:var(--ink);text-decoration:none}
+.hit h2 a:hover{color:var(--accent)}
+.hit .date{color:var(--sub);font-size:.82rem;margin:0}
+.hit .price{margin:.3rem 0 0;font-size:.85rem}
+.hit .tags{margin:.3rem 0}
+
+/* ── 締切アラートの登録口 ─────────────────────────────────── */
+/* iframeは幅を指定しないとスマホで横にはみ出す。**390pxで実測して決めている** */
+.formwrap{border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:1rem 0;background:var(--bg)}
+.formwrap iframe{display:block;width:100%;max-width:100%;border:0}
+.lede{font-size:1.02rem;background:var(--card);border-left:3px solid var(--accent);border-radius:6px;padding:.8rem 1rem}
 `
 
 // ── 書き出し ──────────────────────────────────────────────────────
@@ -401,7 +717,12 @@ const 守るファイル = []
 if (existsSync(公開先)) {
   for (const f of readdirSync(公開先)) {
     // Googleの所有確認ファイル と IndexNowの鍵（32桁の英数字.txt）
-    if (/^google[0-9a-f]+\.html$/i.test(f) || /^[0-9a-f]{16,64}\.txt$/i.test(f)) {
+    // ⚠ **CNAME（独自ドメインの札）も必ず残す**（2026-09-07 に追加）。
+    //   これが消えると GitHub Pages の独自ドメイン設定が外れ、
+    //   **soumu-choice.com が開かなくなります。**
+    //   組み立ては毎朝走るので、忘れると翌朝サイトごと落ちます。
+    //   買った当日に、実際に一度消えました。
+    if (/^google[0-9a-f]+\.html$/i.test(f) || /^[0-9a-f]{16,64}\.txt$/i.test(f) || f === 'CNAME') {
       守るファイル.push({ 名前: f, 中身: readFileSync(join(公開先, f)) })
     }
   }
@@ -417,9 +738,26 @@ for (const f of 守るファイル) {
 
 writeFileSync(join(公開先, '.nojekyll'), '', 'utf8')
 writeFileSync(join(公開先, 'style.css'), CSS, 'utf8')
-writeFileSync(join(公開先, 'index.html'), 一覧ページ(), 'utf8')
 writeFileSync(join(公開先, 'disclosure.html'), 開示ページ(), 'utf8')
 for (const k of 記事一覧) writeFileSync(join(公開先, 'kiji', `${k.slug}.html`), 記事ページ(k), 'utf8')
+
+// ── 補助金のページ（ロングテール集客の本体）────────────────────
+// 記事より先に作る。トップの案内に「受付中◯件」と出すのに件数が要るため。
+const 今日 = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10)
+const 補助金 = 補助金ページ一式を作る({ 作業場, 公開先, ページ, e, 提携先, 公開URL, 今日 })
+
+writeFileSync(join(公開先, 'index.html'), 一覧ページ(補助金.受付中 ?? 0, 補助金.間近 ?? [], 補助金.分布 ?? []), 'utf8')
+
+// ── 無料の締切アラートの登録口 ──────────────────────────────────
+// **登録先が設定に無ければ、ページごと作りません。**空のフォームを置かないため。
+const アラート = アラート登録ページ(補助金.受付中 ?? 0)
+if (アラート) {
+  mkdirSync(join(公開先, 'alert'), { recursive: true })
+  writeFileSync(join(公開先, 'alert', 'index.html'), アラート, 'utf8')
+  console.log(`締切アラートの登録口：docs/alert/index.html（登録先＝${アラート登録先().種類}）`)
+} else {
+  console.log('締切アラートの登録口：設定.json に登録先が無いため作りませんでした')
+}
 
 // サイトマップとrobots（公開URLが分かっているときだけ）
 if (公開URL) {
@@ -427,7 +765,10 @@ if (公開URL) {
   const 中身 = [
     url(`${公開URL}/`),
     url(`${公開URL}/disclosure.html`),
-    ...記事一覧.map(k => url(`${公開URL}/kiji/${k.slug}.html`, k.published))
+    ...(アラート ? [url(`${公開URL}/alert/`, 今日)] : []),
+    ...記事一覧.map(k => url(`${公開URL}/kiji/${k.slug}.html`, k.published)),
+    // **受付が終わったものはここに入れない。**古い情報で人を呼ばない
+    ...(補助金.サイトマップ ?? []).map(loc => url(loc, 今日)),
   ].join('\n')
   writeFileSync(
     join(公開先, 'sitemap.xml'),

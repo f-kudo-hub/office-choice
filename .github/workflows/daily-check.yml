@@ -1,0 +1,65 @@
+# 毎朝の点検を、機械が毎朝やる。
+#
+# ⚠ **なぜ要るか（2026-09-09）。**
+#   点検の道具（tools/毎朝の点検.mjs）は前からあったのに、**定期実行に載せていなかった。**
+#   つまり「自動で動いているか」を見る側が手動で、**誰かが思い出して叩いた日しか点検されない。**
+#   実際、note用の下書きが16本たまっていることに、この日まで誰も気づけなかった。
+#
+#   会社の作業場では「点検する側が動いたかを見る」ところまで作ったのに、
+#   副業側は素通しだった。**無事と、点検できていないことは別物。**
+#
+# ⚠ 見張る相手（post-daily / subsidy-refresh）より **後** に走らせる。
+#   先に走ると、その日の分をまだ見ないまま「動いていません」と誤報する。
+name: 毎朝の点検
+
+on:
+  schedule:
+    # 見張る相手は UTC 21:00（補助金）と UTC 22:00（記事）。
+    # UTC 23:30 ＝ 日本時間 翌朝 8:30。両方が終わったあとに見る。
+    # **枠を2本置く。**GitHubの定期実行は混んでいると枠ごと捨てられる。
+    - cron: "30 23 * * *"
+    - cron: "0 1 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-check
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 作業場を取り出す
+        uses: actions/checkout@v4
+
+      - name: Node を用意する
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: 点検する
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node "tools/毎朝の点検.mjs"
+
+      - name: 結果を残す
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add 00_点検結果.md
+          if git diff --staged --quiet; then
+            echo "変わりなし。コミットしません"
+          else
+            git commit -m "毎朝の点検：$(TZ=Asia/Tokyo date +%Y-%m-%d)"
+            for i in 1 2 3 4; do
+              git pull --rebase origin "${GITHUB_REF_NAME}" || true
+              git push origin "HEAD:${GITHUB_REF_NAME}" && exit 0
+              echo "送信に失敗。${i}回目の待機。"; sleep $((2 ** i))
+            done
+            exit 1
+          fi

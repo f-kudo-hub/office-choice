@@ -46,18 +46,40 @@ jobs:
       - name: 補助金を集め直す
         run: node tools/補助金を集める.mjs
 
+      # 1件ずつの中身（用途・補助率・対象業種）を取る。公開ページの土台。
+      # **一覧のAPIだけでは、1件ぶんのページを作れる材料が無い。**
+      - name: 補助金の中身を取り直す
+        run: node tools/補助金の詳細を集める.mjs
+
       - name: 会員向けの原稿を作り直す
         run: node tools/会員向けの原稿を作る.mjs
+
+      # 補助金1件につき1ページを作り直す（残り日数が毎日変わるので、毎朝作り直す）。
+      # 受付の終わったものは、ページを消さずに「終了しました」へ変える。
+      - name: サイトを組み立て直す
+        run: node tools/サイトを組み立てる.mjs
 
       - name: 変わっていたらコミットする
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add データ/ 会員向け/
+          git add データ/ 会員向け/ docs/
           # 中身が同じ日は何もしない（空コミットを積み上げない）
           if git diff --staged --quiet; then
             echo "変わりなし。コミットしません"
           else
             git commit -m "補助金カレンダーの更新：$(TZ=Asia/Tokyo date +%Y-%m-%d)"
-            git push
+            for i in 1 2 3 4; do
+              git pull --rebase origin "${GITHUB_REF_NAME}" || true
+              git push origin "HEAD:${GITHUB_REF_NAME}" && exit 0
+              echo "送信に失敗。${i}回目の待機。"; sleep $((2 ** i))
+            done
+            exit 1
           fi
+
+      # **公開してから知らせる。**先に知らせても、検索側が見に来たときページが無い。
+      # 送るのは新しくできたページだけ（残り日数が減っただけのページは送らない）。
+      # **失敗しても更新は取り消さない。**知らせの失敗で、その日の更新をなかったことにしない。
+      - name: 検索エンジンに知らせる（IndexNow）
+        continue-on-error: true
+        run: node tools/検索エンジンに知らせる.mjs

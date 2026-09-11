@@ -70,12 +70,41 @@ if (!urls.length) {
   process.exit(1)
 }
 
+// ── 同じURLを毎日投げない ──────────────────────────────────
+//
+// 補助金のページには「あと◯日」が入っているため、**中身が毎日変わる。**
+// そのまま毎朝走らせると、100本を超えるURLを毎日投げ続けることになる。
+// IndexNow の案内には「実際に中身が変わったURLだけを送ること」とあり、
+// 変わっていないURLを送り続けると、送信そのものを無視されるようになる。
+//
+// **本当に知らせたいのは、新しくできたページ。**残り日数が1日減っただけのページを
+// 毎朝知らせても、向こうにとっては同じページで、こちらの信用が減るだけ。
+//
+// そこで：初めて出すURLは必ず送る。前に送ったURLは30日たつまで送らない。
+const 記録の場所 = join(作業場, 'データ', 'indexnow_知らせた.json')
+const 記録 = existsSync(記録の場所) ? JSON.parse(readFileSync(記録の場所, 'utf8')) : {}
+const 今日 = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10)
+const 日数差 = d => Math.round((new Date(今日) - new Date(d)) / 86400000)
+
+const 送るURL = urls.filter(u => !記録[u] || 日数差(記録[u]) >= 30)
+const 初めて = urls.filter(u => !記録[u]).length
+
+// **サイトマップから消えたURLは記録からも消す。**受付の終わった補助金のページは
+// noindex にしてサイトマップから外している。記録に残し続けると際限なく増える
+for (const u of Object.keys(記録)) if (!urls.includes(u)) delete 記録[u]
+
+if (!送るURL.length) {
+  console.log(`知らせるURLはありません（サイトマップ ${urls.length}件は、すべて30日以内に知らせ済みです）`)
+  writeFileSync(記録の場所, JSON.stringify(記録, null, 2), 'utf8')
+  process.exit(0)
+}
+
 // ── 知らせる ────────────────────────────────────────────────
 const body = {
   host: ホスト,
   key: 鍵,
   keyLocation: `${公開URL}/${鍵}.txt`,
-  urlList: urls,
+  urlList: 送るURL,
 }
 
 const res = await fetch('https://api.indexnow.org/indexnow', {
@@ -86,11 +115,15 @@ const res = await fetch('https://api.indexnow.org/indexnow', {
 
 // **「送った」で終わらせない。**向こうが受け取ったかを見る
 const 文 = await res.text().catch(() => '')
-console.log(`IndexNow へ ${urls.length}件のURLを知らせました`)
+console.log(`IndexNow へ ${送るURL.length}件のURLを知らせました（うち初めて出すもの ${初めて}件／サイトマップ全体は ${urls.length}件）`)
 console.log(`  返答：HTTP ${res.status} ${文.slice(0, 120)}`)
 
 if (res.status === 200 || res.status === 202) {
   console.log('  受け付けられました（Bing / Yandex などが見に来ます）')
+  // **受け付けられたときだけ記録する。**弾かれた分を「知らせ済み」にすると、
+  // そのURLは30日間もう一度送られず、静かに漏れる
+  for (const u of 送るURL) 記録[u] = 今日
+  writeFileSync(記録の場所, JSON.stringify(記録, null, 2), 'utf8')
 } else if (res.status === 403) {
   console.log('  ⚠️ 鍵ファイルが読めていません。docs/ を公開してから、もう一度実行してください')
 } else {
