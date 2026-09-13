@@ -30,7 +30,7 @@ const 色 = { 地: '#ffffff', 墨: '#1c1c1e', 灰: '#6b6b70', 線: '#e3e3e6', �
 const 書体 = (太さ, px) => `${太さ} ${px}px "Noto Sans JP"`
 
 /** 幅に収まるように折る。句読点のあとで折るのを先に試し、無理なら字で折る */
-function 折る(ctx, text, 最大幅, 最大行, 句読点で = true) {
+export function 折る(ctx, text, 最大幅, 最大行, 句読点で = true) {
   const 行 = []
   let 残り = String(text ?? '').replace(/\s+/g, ' ').trim()
   while (残り && 行.length < 最大行) {

@@ -22,6 +22,7 @@ import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 import { 補助金ページ一式を作る } from './補助金のページを作る.mjs'
 import { OGP画像を出す } from './OGP画像を作る.mjs'
+import { SNSの1枚を出す } from './SNSの1枚を作る.mjs'
 
 const ここ = dirname(fileURLToPath(import.meta.url))
 const 作業場 = join(ここ, '..')
@@ -827,6 +828,11 @@ if (公開URL) {
   writeFileSync(join(公開先, 'robots.txt'), 'User-agent: *\nAllow: /\n', 'utf8')
   console.log('※ 設定.json の「公開URL」が空のため、sitemap.xml は作りませんでした。')
 }
+
+// ⚠ **必ず最後。**この1枚は docs/hojo を作ったあとの「掲載済み」を数えるので、
+// 先に呼ぶと前日の件数で描いてしまう。別コマンドにすると、打ち忘れた日だけ
+// 古い絵が投稿される（しかも絵は出るので、失敗として現れない）。
+SNSの1枚を出す()
 
 console.log(`組み立てました：記事 ${記事一覧.length} 本 → docs/`)
 console.log(アフィリ有効 ? `Amazonタグ：${タグ}（有効）` : 'Amazonタグ：未設定（タグなしリンクで出力）')
