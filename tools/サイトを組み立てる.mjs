@@ -21,6 +21,7 @@ import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync, rmSync
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 import { 補助金ページ一式を作る } from './補助金のページを作る.mjs'
+import { OGP画像を出す } from './OGP画像を作る.mjs'
 
 const ここ = dirname(fileURLToPath(import.meta.url))
 const 作業場 = join(ここ, '..')
@@ -324,7 +325,12 @@ function 構造化データ({ type, title, description, canonical, published, fa
     .join('\n')
 }
 
-function ページ({ title, description, body, root, canonical, type, published, faq, 案内を出す }) {
+/**
+ * og画像：'ogp/xxx.png'（docs からの相対）。無ければ og:image を出さない。
+ * ⚠ 2026-09-13 まで og:image が1枚も無く、X・note・LINE に流れても絵が出なかった（常務のご指摘）。
+ */
+function ページ({ title, description, body, root, canonical, type, published, faq, 案内を出す, og画像 }) {
+  const og画像URL = og画像 && 公開URL ? `${公開URL}/${og画像}` : ''
   return `<!doctype html>
 <html lang="ja">
 <head>
@@ -338,7 +344,11 @@ ${canonical ? `<link rel="canonical" href="${e(canonical)}">` : ''}
 <meta property="og:type" content="${type === '記事' ? 'article' : 'website'}">
 ${canonical ? `<meta property="og:url" content="${e(canonical)}">` : ''}
 <meta property="og:site_name" content="${e(サイト名)}">
-<meta name="twitter:card" content="summary">
+${og画像URL ? `<meta property="og:image" content="${e(og画像URL)}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="${e(og画像URL)}">` : `<meta name="twitter:card" content="summary">`}
 ${構造化データ({ type, title, description, canonical, published, faq })}
 <link rel="stylesheet" href="${root}style.css">
 ${アクセス解析()}
@@ -464,6 +474,7 @@ function 記事ページ(k) {
     type: '記事',
     published: k.published,
     faq: k.faq,
+    og画像: OGP画像を出す({ 出し先: 公開先, 名前: `kiji-${k.slug}`, 小見出し: サイト名, 題: k.title, 帯: 設定.サイトの説明 }),
   })
 }
 
@@ -530,7 +541,12 @@ function 一覧ページ(補助金の受付中, 間近, 分布) {
     body: `<h1 class="sr">記事の一覧</h1>\n${補助金への案内(補助金の受付中, 間近, 分布)}\n<ul class="cards">\n${中身}\n</ul>`,
     root: './',
     canonical: 公開URL ? `${公開URL}/` : '',
-    案内を出す: true
+    案内を出す: true,
+    og画像: OGP画像を出す({
+      出し先: 公開先, 名前: 'top', 小見出し: サイト名, 題: '中小企業の総務が決裁する「契約」と「買いもの」を、決裁した側の目線で選ぶ',
+      数字: [{ ラベル: '受付中の補助金', 値: String(補助金の受付中), 単位: '件' }, { ラベル: '更新', 値: '毎朝', 単位: '自動' }, { ラベル: '記事', 値: String(記事一覧.length), 単位: '本' }],
+      帯: '補助金の締切・上限額・自己負担の目安を、公開データから毎朝計算しています',
+    }),
   })
 }
 

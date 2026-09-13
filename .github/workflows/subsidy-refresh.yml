@@ -43,6 +43,11 @@ jobs:
         with:
           node-version: "22"
 
+      # OGP画像（@napi-rs/canvas）を描くのに要る。2026-09-13 から。
+      # ⚠ これが無いと「サイトを組み立て直す」が import で落ち、毎朝の補助金更新ごと止まる
+      - name: 部品を入れる
+        run: npm install --no-audit --no-fund
+
       - name: 補助金を集め直す
         run: node tools/補助金を集める.mjs
 
