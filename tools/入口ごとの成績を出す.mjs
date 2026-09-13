@@ -24,7 +24,10 @@
  */
 import fs from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
+const ここ = path.dirname(fileURLToPath(import.meta.url))
+const 設定 = JSON.parse(fs.readFileSync(path.join(ここ, '..', '設定.json'), 'utf8'))
 const 全部 = process.argv.includes('--全部')
 const 今日 = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' })
 
@@ -59,8 +62,11 @@ function 配った数を数える() {
    0と出すと「配ったのに誰も来ていない」と読み違えます
    （無事と、確かめていないことは別物）。 */
 async function 来た人を数える() {
-  const 鍵 = process.env.GA4_SERVICE_KEY
-  const 物件 = process.env.GA4_PROPERTY_ID
+  // 鍵の置き場（2026-09-13）：環境変数が無ければ secrets/ga4-service-key.json（.gitignore 済み）。
+  // 物件IDは 設定.json の「GA4プロパティID」（秘密ではないので設定に置く）
+  const 鍵ファイル = path.join(ここ, '..', 'secrets', 'ga4-service-key.json')
+  const 鍵 = process.env.GA4_SERVICE_KEY || (fs.existsSync(鍵ファイル) ? fs.readFileSync(鍵ファイル, 'utf8') : '')
+  const 物件 = process.env.GA4_PROPERTY_ID || 設定.GA4プロパティID
   if (!鍵 || !物件) return null
   try {
     const { BetaAnalyticsDataClient } = await import('@google-analytics/data')
@@ -134,6 +140,25 @@ for (const 入口 of 台帳.入口) {
   文.push(`| ${入口.名} | \`${入口.utm_source}\` | ${c} | ${v ?? '—'} | ${状態} |`)
 }
 文.push('')
+
+/* ── 台帳に無い出どころ（2026-09-13）────────────────────
+   ⚠ 台帳の印に合う行だけ出すと、来た人の大半が表から消える。
+   初めて測った日、GAの画面は「7日で69人・+1,050%」だったが、
+   その内訳は (direct) 72人・Google検索 1人だった。**表に無い出どころを隠すと、増えたように読み違える。** */
+if (来た) {
+  const 台帳の印 = new Set(台帳.入口.map(x => `${x.utm_source}/${x.utm_medium}`))
+  const 他 = Object.entries(来た).filter(([印]) => !台帳の印.has(印)).sort((a, b) => b[1].人 - a[1].人)
+  if (他.length) {
+    文.push('## 台帳に無い出どころ（来た人の内訳）', '', '| 出どころ | 来た人 | 読み方 |', '| --- | ---: | --- |')
+    for (const [印, x] of 他) {
+      const 読み = 印.startsWith('(direct)') ? 'URL直打ち・自分の確認・機械の巡回が混ざる。**お客さまの数ではない**'
+        : 印.includes('tagassistant') ? '計測の設定画面から。お客さまではない'
+        : ''
+      文.push(`| ${印} | ${x.人} | ${読み} |`)
+    }
+    文.push('')
+  }
+}
 
 文.push('## 稼いだ額', '')
 if (Object.keys(稼ぎ).length === 0) {

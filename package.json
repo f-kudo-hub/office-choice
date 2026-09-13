@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.120.0",
+    "@google-analytics/data": "^7.1.0",
     "@napi-rs/canvas": "^1.0.9"
   }
 }
