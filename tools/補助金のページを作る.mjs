@@ -138,7 +138,7 @@ function 地域をそろえる(s) {
 // **きれいに1つの割合として読めるときだけ計算する。**
 // 読めないものを当てずっぽうで数字にすると、読者が自己負担を見誤る。
 // 分からないときは「公募要領をご確認ください」と正直に書く。
-function 割合を読む(s) {
+export function 割合を読む(s) {
   if (!s) return null
   const t = String(s)
     .replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
