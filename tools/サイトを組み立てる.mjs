@@ -369,6 +369,26 @@ ${下の帯.replaceAll('{{ROOT}}', root)}
 `
 }
 
+/* ── 要約カード（2026-09-13）────────────────────────────────
+   常務のご指摘「文字を読みたくない。画像・動画で理解したい」。
+   本文の前に、数字3つ（読む時間・確かめる点・候補の数）と、見出しの先頭3つを「先に結論」として置く。
+   見出しは1文の主張として書かれているので、そのまま結論になる。AIに要約を書かせない（¥0・毎回同じ）。 */
+function 要約カード(k) {
+  const 字数 = k.sections.reduce((n, x) => n + String(x.body ?? '').length, 0) + String(k.lead ?? '').length
+  const 分 = Math.max(1, Math.round(字数 / 600))
+  const 結論 = k.sections.slice(0, 3).map((x, i) => `<li><a href="#s${i + 1}">${e(x.heading)}</a></li>`).join('')
+  const 候補 = (k.products ?? []).length
+  return `<aside class="tldr" aria-label="先に結論">
+  <div class="tldr-nums">
+    <div><span class="v">${分}</span><span class="u">分で読める</span></div>
+    <div><span class="v">${k.sections.length}</span><span class="u">つの確かめる点</span></div>
+    ${候補 ? `<div><span class="v">${候補}</span><span class="u">件の候補</span></div>` : ''}
+  </div>
+  <p class="tldr-title">先に結論</p>
+  <ol>${結論}</ol>
+</aside>`
+}
+
 // ── 記事ページ ────────────────────────────────────────────────────
 function 記事ページ(k) {
   const 目次 = k.sections.map((s, i) => `<li><a href="#s${i + 1}">${e(s.heading)}</a></li>`).join('')
@@ -442,6 +462,7 @@ function 記事ページ(k) {
   ${広告の1行を作る(k)}
   <p class="lead">${e(k.lead)}</p>
 
+  ${要約カード(k)}
   <nav class="toc"><p class="toc-title">この記事の中身</p><ol>${目次}</ol></nav>
 
   ${本編}
@@ -607,6 +628,16 @@ a{color:var(--accent)}
 .tag{display:inline-block;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:.08rem .6rem;margin-right:.3rem;font-size:.76rem;color:var(--sub)}
 .ad-notice{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);padding:.7rem .9rem;font-size:.84rem;color:var(--sub);margin-bottom:1.4rem}
 .lead{font-size:1.05rem}
+.tldr{border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:8px;padding:1rem 1.2rem;margin:1.6rem 0;background:var(--bg)}
+.tldr-nums{display:flex;flex-wrap:wrap;gap:.6rem 1.6rem;margin-bottom:.8rem}
+.tldr-nums div{display:flex;align-items:baseline;gap:.3rem;min-width:0}
+.tldr-nums .v{font-size:1.9rem;font-weight:700;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
+.tldr-nums .u{font-size:.82rem;color:var(--sub);white-space:nowrap}
+.tldr-title{margin:0 0 .3rem;font-size:.8rem;font-weight:700;color:var(--accent);letter-spacing:.06em}
+.tldr ol{margin:0;padding-left:1.3rem;font-size:.98rem;line-height:1.7}
+.tldr ol li{margin:.15rem 0}
+.tldr ol a{color:var(--ink);text-decoration:none;font-weight:600}
+.tldr ol a:hover{text-decoration:underline}
 .toc{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:1rem 1.2rem;margin:1.6rem 0}
 .toc-title{font-size:.8rem;color:var(--sub);margin:0 0 .4rem;letter-spacing:.08em}
 .toc ol{margin:0;padding-left:1.2rem}
