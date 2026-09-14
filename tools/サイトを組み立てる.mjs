@@ -242,16 +242,17 @@ ${入口}
  * 運営者の別サービス（クロユキ）の案内。2026-09-14 常務「オフィスの選び方にクロユキサービスのバナーを貼ったら！宣伝になるのでは？」
  * ⚠ 広告ではなく運営者自身のサービスなので「運営者の別サービス」と明記する（誰のものか分からない宣伝にしない）。
  * ⚠ 全ページの下の帯の上に1つだけ。本文の途中には挟まない（読み物を邪魔しない）。
- * ⚠ 2026-09-14 常務「ロゴじゃないね！なんか目立たないし！」→ 文字リンクをやめ、**宣伝カード（ロゴ入りの画像）**を貼る。
- *    画像は `手書きページ/assets/`（docs/ は毎回消えるため）。元は kuroyuki/03_営業/ロゴ/クロユキ_宣伝カード.png
+ * ⚠ 2026-09-14 常務「ロゴじゃないね！なんか目立たないし！」→ 文字リンクをやめてロゴを置く。
+ *    いったん宣伝カード（2400×1260）を丸ごと貼ったら「デカすぎる！ロゴと下に説明を添える感じで！」。
+ *    いまは **ロゴ（幅 約200px）＋その下に説明1文**。画像は `手書きページ/assets/`（docs/ は毎回消えるため）
  */
 const クロユキの案内 = `
 <aside class="kuro-ad" aria-label="運営者の別サービス">
   <p class="kuro-ad-k">運営者の別サービス</p>
-  <a class="kuro-ad-card" href="https://kuroyuki.vercel.app/?from=soumu-choice" rel="noopener">
-    <img src="{{ROOT}}assets/kuroyuki-card.png" alt="クロユキ｜経営数値の可視化AIサービス。人を増やさずに、会社を回す。会社の数字を毎朝見える化する道具を、その会社専用に作ります" width="2400" height="1260" loading="lazy" decoding="async">
+  <a class="kuro-ad-body" href="https://kuroyuki.vercel.app/?from=soumu-choice" rel="noopener">
+    <img class="kuro-ad-logo" src="{{ROOT}}assets/kuroyuki-logo.png" alt="クロユキ｜経営数値の可視化AIサービス" width="1063" height="418" loading="lazy" decoding="async">
+    <span class="kuro-ad-s">会社の数字を毎朝見える化する道具を、その会社専用に作ります。人を増やせない会社のための、現状分析（2週間）から。<span class="kuro-ad-more">くわしく見る →</span></span>
   </a>
-  <p class="kuro-ad-s">会社の数字を毎朝見える化する道具を、その会社専用に作ります。人を増やせない会社のための、現状分析（2週間）から。</p>
 </aside>`
 
 const 下の帯 = `${クロユキの案内}
@@ -864,10 +865,11 @@ blockquote p{margin:0}
 /* ── 下の帯 ─────────────────────────────────────────────── */
 .kuro-ad{max-width:64rem;margin:2.4rem auto 0;padding:0 1rem}
 .kuro-ad-k{margin:0 0 .4rem;font-size:.72rem;letter-spacing:.18em;color:var(--ink-3)}
-.kuro-ad-card{display:block;border:1px solid var(--line);border-radius:6px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06);transition:box-shadow .15s,transform .15s}
-.kuro-ad-card:hover{box-shadow:0 6px 20px rgba(0,0,0,.12);transform:translateY(-1px)}
-.kuro-ad-card img{display:block;width:100%;height:auto}
-.kuro-ad-s{margin:.5rem 0 0;font-size:.84rem;color:var(--ink-2)}
+.kuro-ad-body{display:flex;flex-direction:column;align-items:flex-start;gap:.6rem;padding:1rem 1.2rem;border:1px solid var(--line);background:var(--card);border-radius:6px;text-decoration:none;color:inherit}
+.kuro-ad-body:hover{border-color:var(--accent)}
+.kuro-ad-logo{display:block;width:220px;max-width:70%;height:auto}
+.kuro-ad-more{display:inline-block;margin-left:.4em;color:var(--accent);font-weight:700;white-space:nowrap}
+.kuro-ad-s{margin:0;font-size:.9rem;line-height:1.7;color:var(--ink-2)}
 .foot{max-width:64rem;margin:0 auto;padding:1.6rem 1.2rem 3rem;border-top:3px solid var(--ink);color:var(--ink-3);font-size:.84rem}
 .foot p{margin:.3rem 0}
 `

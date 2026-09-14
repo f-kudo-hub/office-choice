@@ -208,9 +208,10 @@ blockquote p{margin:0}
 /* ── 下の帯 ─────────────────────────────────────────────── */
 .kuro-ad{max-width:64rem;margin:2.4rem auto 0;padding:0 1rem}
 .kuro-ad-k{margin:0 0 .4rem;font-size:.72rem;letter-spacing:.18em;color:var(--ink-3)}
-.kuro-ad-card{display:block;border:1px solid var(--line);border-radius:6px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06);transition:box-shadow .15s,transform .15s}
-.kuro-ad-card:hover{box-shadow:0 6px 20px rgba(0,0,0,.12);transform:translateY(-1px)}
-.kuro-ad-card img{display:block;width:100%;height:auto}
-.kuro-ad-s{margin:.5rem 0 0;font-size:.84rem;color:var(--ink-2)}
+.kuro-ad-body{display:flex;flex-direction:column;align-items:flex-start;gap:.6rem;padding:1rem 1.2rem;border:1px solid var(--line);background:var(--card);border-radius:6px;text-decoration:none;color:inherit}
+.kuro-ad-body:hover{border-color:var(--accent)}
+.kuro-ad-logo{display:block;width:220px;max-width:70%;height:auto}
+.kuro-ad-more{display:inline-block;margin-left:.4em;color:var(--accent);font-weight:700;white-space:nowrap}
+.kuro-ad-s{margin:0;font-size:.9rem;line-height:1.7;color:var(--ink-2)}
 .foot{max-width:64rem;margin:0 auto;padding:1.6rem 1.2rem 3rem;border-top:3px solid var(--ink);color:var(--ink-3);font-size:.84rem}
 .foot p{margin:.3rem 0}
