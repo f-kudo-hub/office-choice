@@ -242,12 +242,16 @@ ${入口}
  * 運営者の別サービス（クロユキ）の案内。2026-09-14 常務「オフィスの選び方にクロユキサービスのバナーを貼ったら！宣伝になるのでは？」
  * ⚠ 広告ではなく運営者自身のサービスなので「運営者の別サービス」と明記する（誰のものか分からない宣伝にしない）。
  * ⚠ 全ページの下の帯の上に1つだけ。本文の途中には挟まない（読み物を邪魔しない）。
+ * ⚠ 2026-09-14 常務「ロゴじゃないね！なんか目立たないし！」→ 文字リンクをやめ、**宣伝カード（ロゴ入りの画像）**を貼る。
+ *    画像は `手書きページ/assets/`（docs/ は毎回消えるため）。元は kuroyuki/03_営業/ロゴ/クロユキ_宣伝カード.png
  */
 const クロユキの案内 = `
 <aside class="kuro-ad" aria-label="運営者の別サービス">
   <p class="kuro-ad-k">運営者の別サービス</p>
-  <p class="kuro-ad-t"><a href="https://kuroyuki.vercel.app/?from=soumu-choice" rel="noopener">クロユキ｜会社の数字を毎朝見える化する道具を、その会社専用に作ります</a></p>
-  <p class="kuro-ad-s">資金繰り・売上・申請の状況を、毎朝ひとりでに更新される1枚に。人を増やせない会社のための、現状分析（2週間）から。</p>
+  <a class="kuro-ad-card" href="https://kuroyuki.vercel.app/?from=soumu-choice" rel="noopener">
+    <img src="{{ROOT}}assets/kuroyuki-card.png" alt="クロユキ｜経営数値の可視化AIサービス。人を増やさずに、会社を回す。会社の数字を毎朝見える化する道具を、その会社専用に作ります" width="2400" height="1260" loading="lazy" decoding="async">
+  </a>
+  <p class="kuro-ad-s">会社の数字を毎朝見える化する道具を、その会社専用に作ります。人を増やせない会社のための、現状分析（2週間）から。</p>
 </aside>`
 
 const 下の帯 = `${クロユキの案内}
@@ -858,12 +862,12 @@ blockquote p{margin:0}
 .offer-btn:hover{background:var(--br-600)}
 
 /* ── 下の帯 ─────────────────────────────────────────────── */
-.kuro-ad{max-width:64rem;margin:2.4rem auto 0;padding:1rem 1.2rem;border:1px solid var(--line);background:var(--card)}
-.kuro-ad-k{margin:0 0 .2rem;font-size:.72rem;letter-spacing:.18em;color:var(--ink-3)}
-.kuro-ad-t{margin:0;font-weight:700;font-size:1rem}
-.kuro-ad-t a{color:var(--accent);text-decoration:none}
-.kuro-ad-t a:hover{text-decoration:underline}
-.kuro-ad-s{margin:.3rem 0 0;font-size:.84rem;color:var(--ink-2)}
+.kuro-ad{max-width:64rem;margin:2.4rem auto 0;padding:0 1rem}
+.kuro-ad-k{margin:0 0 .4rem;font-size:.72rem;letter-spacing:.18em;color:var(--ink-3)}
+.kuro-ad-card{display:block;border:1px solid var(--line);border-radius:6px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06);transition:box-shadow .15s,transform .15s}
+.kuro-ad-card:hover{box-shadow:0 6px 20px rgba(0,0,0,.12);transform:translateY(-1px)}
+.kuro-ad-card img{display:block;width:100%;height:auto}
+.kuro-ad-s{margin:.5rem 0 0;font-size:.84rem;color:var(--ink-2)}
 .foot{max-width:64rem;margin:0 auto;padding:1.6rem 1.2rem 3rem;border-top:3px solid var(--ink);color:var(--ink-3);font-size:.84rem}
 .foot p{margin:.3rem 0}
 `
