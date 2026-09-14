@@ -206,5 +206,11 @@ blockquote p{margin:0}
 .offer-btn:hover{background:var(--br-600)}
 
 /* ── 下の帯 ─────────────────────────────────────────────── */
+.kuro-ad{max-width:64rem;margin:2.4rem auto 0;padding:1rem 1.2rem;border:1px solid var(--line);background:var(--card)}
+.kuro-ad-k{margin:0 0 .2rem;font-size:.72rem;letter-spacing:.18em;color:var(--ink-3)}
+.kuro-ad-t{margin:0;font-weight:700;font-size:1rem}
+.kuro-ad-t a{color:var(--accent);text-decoration:none}
+.kuro-ad-t a:hover{text-decoration:underline}
+.kuro-ad-s{margin:.3rem 0 0;font-size:.84rem;color:var(--ink-2)}
 .foot{max-width:64rem;margin:0 auto;padding:1.6rem 1.2rem 3rem;border-top:3px solid var(--ink);color:var(--ink-3);font-size:.84rem}
 .foot p{margin:.3rem 0}
