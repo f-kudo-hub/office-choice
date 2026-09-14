@@ -17,7 +17,7 @@
  *
  * 使い方： node tools/サイトを組み立てる.mjs
  */
-import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync, rmSync } from 'node:fs'
+import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync, rmSync, copyFileSync, statSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 import { 補助金ページ一式を作る } from './補助金のページを作る.mjs'
@@ -906,6 +906,24 @@ for (const f of 守るファイル) {
   console.log(`残しました：${f.名前}（消すと外の仕組みが壊れるため）`)
 }
 
+/**
+ * 手書きのページ（登録者への3点セットなど）は `手書きページ/` に置き、毎回ここから docs/ へ写す。
+ * ⚠ 2026-09-14、docs/gift/map.html を直接置いたら、次の組み立てで docs/ ごと消えた
+ *    （docs は毎回まるごと作り直す決まり）。**docs/ に直接手書きしない。**
+ */
+// ⚠ fs.cpSync は Node 24 ＋ Windows ＋ 日本語パスで**何も言わずに落ちる**（exit 127・2026-09-14 実測）。手で再帰コピーする
+function フォルダを写す(元, 先) {
+  mkdirSync(先, { recursive: true })
+  for (const 名 of readdirSync(元)) {
+    const a = join(元, 名), b = join(先, 名)
+    if (statSync(a).isDirectory()) フォルダを写す(a, b)
+    else copyFileSync(a, b)
+  }
+}
+if (existsSync(join(作業場, '手書きページ'))) {
+  フォルダを写す(join(作業場, '手書きページ'), 公開先)
+  console.log('手書きページを写しました：' + readdirSync(join(作業場, '手書きページ')).join('・'))
+}
 writeFileSync(join(公開先, '.nojekyll'), '', 'utf8')
 writeFileSync(join(公開先, 'style.css'), CSS, 'utf8')
 writeFileSync(join(公開先, 'disclosure.html'), 開示ページ(), 'utf8')
