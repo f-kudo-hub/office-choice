@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" role="img" aria-label="クロユキ">
+  <!-- ロゴの印：クロユキちゃんの顔（小さくても読めるよう、顔だけ・線を太く） -->
+  <defs>
+    <radialGradient id="m-body" cx="38%" cy="32%" r="75%">
+      <stop offset="0" stop-color="#3a3f47"/>
+      <stop offset="1" stop-color="#111417"/>
+    </radialGradient>
+  </defs>
+  <circle cx="60" cy="58" r="50" fill="url(#m-body)"/>
+  <!-- マフラー（下の縁） -->
+  <path d="M14 78 Q 60 106 106 78 L 108 92 Q 60 122 12 92 Z" fill="#E5322D"/>
+  <!-- 目 -->
+  <ellipse cx="42" cy="56" rx="10" ry="12" fill="#fff"/>
+  <ellipse cx="78" cy="56" rx="10" ry="12" fill="#fff"/>
+  <circle cx="44" cy="58" r="5.5" fill="#111417"/>
+  <circle cx="80" cy="58" r="5.5" fill="#111417"/>
+  <circle cx="46" cy="55" r="2" fill="#fff"/>
+  <circle cx="82" cy="55" r="2" fill="#fff"/>
+  <!-- ほっぺ -->
+  <circle cx="28" cy="72" r="6" fill="#E5322D" opacity=".85"/>
+  <circle cx="92" cy="72" r="6" fill="#E5322D" opacity=".85"/>
+  <!-- 口 -->
+  <path d="M50 76 Q 60 85 70 76" stroke="#fff" stroke-width="4" stroke-linecap="round" fill="none"/>
+  <!-- 雪の結晶 -->
+  <g transform="translate(88 22)" stroke="#fff" stroke-width="3" stroke-linecap="round">
+    <path d="M0 -11 V11 M-11 0 H11 M-8 -8 L8 8 M-8 8 L8 -8"/>
+  </g>
+</svg>

@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 240" width="200" height="240" role="img" aria-label="クロユキちゃん">
+  <!-- クロユキちゃん：黒い雪だるま＋赤いマフラー（春・3〜5月）。ロゴの黒丸＋赤点と同じ血筋 -->
+  <defs>
+    <radialGradient id="k-body" cx="38%" cy="32%" r="75%">
+      <stop offset="0" stop-color="#3a3f47"/>
+      <stop offset="1" stop-color="#111417"/>
+    </radialGradient>
+    <linearGradient id="k-scarf" x1="0" x2="1">
+      <stop offset="0" stop-color="#F25A55"/>
+      <stop offset="1" stop-color="#C9251F"/>
+    </linearGradient>
+  </defs>
+  <!-- 影 -->
+  <ellipse cx="100" cy="226" rx="58" ry="8" fill="#111417" opacity=".12"/>
+  <!-- 胴 -->
+  <circle cx="100" cy="170" r="54" fill="url(#k-body)"/>
+  <!-- ボタン（赤点） -->
+  <circle cx="100" cy="166" r="4.5" fill="#E5322D"/>
+  <circle cx="100" cy="186" r="4.5" fill="#E5322D"/>
+  <!-- 腕 -->
+  <path d="M52 158 C 38 150, 30 138, 26 126" stroke="#111417" stroke-width="7" stroke-linecap="round" fill="none"/>
+  <circle cx="25" cy="123" r="8" fill="#111417"/>
+  <path d="M148 158 C 162 152, 172 146, 182 140" stroke="#111417" stroke-width="7" stroke-linecap="round" fill="none"/>
+  <circle cx="184" cy="139" r="8" fill="#111417"/>
+  <!-- 頭 -->
+  <circle cx="100" cy="92" r="52" fill="url(#k-body)"/>
+  <!-- マフラー -->
+  <path d="M52 128 Q 100 152 148 128 L 150 140 Q 100 166 50 140 Z" fill="url(#k-scarf)"/>
+  <path d="M132 138 L 150 176 Q 154 184 146 186 L 128 184 Q 122 160 128 140 Z" fill="url(#k-scarf)"/>
+  <path d="M132 160 L 150 158" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".55"/>
+  <!-- 目 -->
+  <ellipse cx="82" cy="90" rx="9" ry="11" fill="#fff"/>
+  <ellipse cx="118" cy="90" rx="9" ry="11" fill="#fff"/>
+  <circle cx="84" cy="92" r="5" fill="#111417"/>
+  <circle cx="120" cy="92" r="5" fill="#111417"/>
+  <circle cx="86" cy="89" r="1.8" fill="#fff"/>
+  <circle cx="122" cy="89" r="1.8" fill="#fff"/>
+  <!-- ほっぺ -->
+  <circle cx="68" cy="106" r="6" fill="#E5322D" opacity=".85"/>
+  <circle cx="132" cy="106" r="6" fill="#E5322D" opacity=".85"/>
+  <!-- 口 -->
+  <path d="M90 110 Q 100 119 110 110" stroke="#fff" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+  <!-- 桜（春） -->
+  <g transform="translate(126 52)">
+    <g fill="#F7A8B8"><ellipse cx="0" cy="-9" rx="5" ry="7"/><ellipse cx="8.5" cy="-2.8" rx="5" ry="7" transform="rotate(72 8.5 -2.8)"/><ellipse cx="5.3" cy="7.3" rx="5" ry="7" transform="rotate(144 5.3 7.3)"/><ellipse cx="-5.3" cy="7.3" rx="5" ry="7" transform="rotate(216 -5.3 7.3)"/><ellipse cx="-8.5" cy="-2.8" rx="5" ry="7" transform="rotate(288 -8.5 -2.8)"/></g>
+    <circle r="3.2" fill="#E5322D"/>
+  </g>
+  <g fill="#F7A8B8" opacity=".9"><ellipse cx="30" cy="60" rx="4" ry="6" transform="rotate(30 30 60)"/><ellipse cx="172" cy="96" rx="4" ry="6" transform="rotate(-40 172 96)"/><ellipse cx="46" cy="200" rx="3.5" ry="5.5" transform="rotate(60 46 200)"/></g>
+</svg>

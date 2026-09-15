@@ -250,9 +250,15 @@ const クロユキの案内 = `
 <aside class="kuro-ad" aria-label="運営者の別サービス">
   <p class="kuro-ad-k">運営者の別サービス</p>
   <a class="kuro-ad-body" href="https://kuroyuki.vercel.app/?from=soumu-choice" rel="noopener">
-    <img class="kuro-ad-logo" src="{{ROOT}}assets/kuroyuki-logo.png" alt="クロユキ｜経営数値の可視化AIサービス" width="1063" height="418" loading="lazy" decoding="async">
-    <span class="kuro-ad-s">会社の数字を毎朝見える化する道具を、その会社専用に作ります。人を増やせない会社のための、現状分析（2週間）から。<span class="kuro-ad-more">くわしく見る →</span></span>
+    <img class="kuro-ad-chan" src="{{ROOT}}assets/kuroyuki-chan.svg" alt="" width="200" height="240" loading="lazy" decoding="async">
+    <span class="kuro-ad-tx">
+      <span class="kuro-ad-name"><img src="{{ROOT}}assets/kuroyuki-mark.svg" alt="" width="28" height="28">クロユキ<small>経営数値の可視化AIサービス</small></span>
+      <strong class="kuro-ad-h">人を増やさずに、会社を<em>回す</em>。</strong>
+      <span class="kuro-ad-s">会社の数字を毎朝見える化する道具を、その会社専用に作ります。人を増やせない会社のための、3分のAI診断（無料）から。</span>
+      <span class="kuro-ad-more">AI診断をはじめる →</span>
+    </span>
   </a>
+  <script>(function(){var m=new Date().getMonth()+1,k=(m>=3&&m<=5)?'spring':(m>=6&&m<=8)?'summer':(m>=9&&m<=11)?'autumn':'winter';var i=document.querySelector('.kuro-ad-chan');if(i)i.src=i.src.replace('kuroyuki-chan.svg','kuroyuki-chan-'+k+'.svg');})();</script>
 </aside>`
 
 const 下の帯 = `${クロユキの案内}
@@ -863,13 +869,22 @@ blockquote p{margin:0}
 .offer-btn:hover{background:var(--br-600)}
 
 /* ── 下の帯 ─────────────────────────────────────────────── */
-.kuro-ad{max-width:64rem;margin:2.4rem auto 0;padding:0 1rem}
+.kuro-ad{max-width:64rem;margin:2.4rem auto 1.6rem;padding:0 1rem}
 .kuro-ad-k{margin:0 0 .4rem;font-size:.72rem;letter-spacing:.18em;color:var(--ink-3)}
-.kuro-ad-body{display:flex;flex-direction:column;align-items:flex-start;gap:.6rem;padding:1rem 1.2rem;border:1px solid var(--line);background:var(--card);border-radius:6px;text-decoration:none;color:inherit}
-.kuro-ad-body:hover{border-color:var(--accent)}
-.kuro-ad-logo{display:block;width:220px;max-width:70%;height:auto}
-.kuro-ad-more{display:inline-block;margin-left:.4em;color:var(--accent);font-weight:700;white-space:nowrap}
-.kuro-ad-s{margin:0;font-size:.9rem;line-height:1.7;color:var(--ink-2)}
+/* 2026-09-15 クロユキのサイト（白・黒・赤）と同じ顔に：クロユキちゃん＋見出し＋黒いピル */
+.kuro-ad-body{display:flex;align-items:center;gap:1.2rem;padding:1.1rem 1.4rem;border:1px solid #E5E7EB;background:#fff;border-radius:16px;box-shadow:0 8px 30px rgba(17,20,23,.06);text-decoration:none;color:#111417}
+.kuro-ad-body:hover{border-color:#111417}
+.kuro-ad-chan{display:block;width:104px;height:auto;flex:none}
+.kuro-ad-tx{display:flex;flex-direction:column;gap:.35rem;min-width:0}
+.kuro-ad-name{display:flex;align-items:center;gap:.4rem;font-weight:900;font-size:1.05rem;letter-spacing:.04em;color:#111417}
+.kuro-ad-name img{width:24px;height:24px}
+.kuro-ad-name small{font-size:.68rem;font-weight:700;color:#6B7280;letter-spacing:0;margin-left:.2rem}
+.kuro-ad-h{font-size:1.25rem;font-weight:900;line-height:1.35;color:#111417}
+.kuro-ad-h em{font-style:normal;color:#E5322D}
+.kuro-ad-s{margin:0;font-size:.88rem;line-height:1.7;color:#3A3F47}
+.kuro-ad-more{display:inline-block;align-self:flex-start;background:#111417;color:#fff;border-radius:999px;padding:.5rem 1.1rem;font-size:.86rem;font-weight:700;white-space:nowrap;margin-top:.2rem}
+.kuro-ad-body:hover .kuro-ad-more{background:#000}
+@media (max-width:560px){.kuro-ad-body{flex-direction:column;align-items:flex-start}.kuro-ad-chan{width:84px}}
 .foot{max-width:64rem;margin:0 auto;padding:1.6rem 1.2rem 3rem;border-top:3px solid var(--ink);color:var(--ink-3);font-size:.84rem}
 .foot p{margin:.3rem 0}
 `
