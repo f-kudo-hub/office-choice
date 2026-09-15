@@ -180,3 +180,17 @@ jobs:
           git commit -m "Xに知らせた記録：$(TZ=Asia/Tokyo date '+%Y-%m-%d')"
           git pull --rebase origin "${GITHUB_REF_NAME}" || true
           git push origin "HEAD:${GITHUB_REF_NAME}" || true
+
+      - name: Blueskyに知らせる
+        if: ${{ !cancelled() && steps.today.outputs.skip != 'true' }}
+        continue-on-error: true
+        env:
+          BSKY_HANDLE: ${{ secrets.BSKY_HANDLE }}
+          BSKY_APP_PASSWORD: ${{ secrets.BSKY_APP_PASSWORD }}
+        run: |
+          node "tools/Blueskyに知らせる.mjs"
+          git add データ
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Blueskyに知らせた記録：$(TZ=Asia/Tokyo date '+%Y-%m-%d')"
+          git pull --rebase origin "${GITHUB_REF_NAME}" || true
+          git push origin "HEAD:${GITHUB_REF_NAME}" || true
