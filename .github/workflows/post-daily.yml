@@ -161,3 +161,22 @@ jobs:
         if: ${{ !cancelled() && steps.today.outputs.skip != 'true' }}
         continue-on-error: true
         run: node "tools/検索エンジンに知らせる.mjs"
+
+      # 公開が終わってから、X に知らせる（2026-09-15 常務「いろんなところに宣伝して！自動化で！」）。
+      # 鍵が無いうちは文面だけ出して素通りする（ログに残る）。鍵は Settings → Secrets の X_API_KEY ほか4つ。
+      # 送れた記録（データ/Xに知らせた.json）は次の日の「公開する」で一緒に積まれる。
+      - name: Xに知らせる
+        if: ${{ !cancelled() && steps.today.outputs.skip != 'true' }}
+        continue-on-error: true
+        env:
+          X_API_KEY: ${{ secrets.X_API_KEY }}
+          X_API_SECRET: ${{ secrets.X_API_SECRET }}
+          X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
+          X_ACCESS_SECRET: ${{ secrets.X_ACCESS_SECRET }}
+        run: |
+          node "tools/Xに知らせる.mjs"
+          git add データ
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Xに知らせた記録：$(TZ=Asia/Tokyo date '+%Y-%m-%d')"
+          git pull --rebase origin "${GITHUB_REF_NAME}" || true
+          git push origin "HEAD:${GITHUB_REF_NAME}" || true
