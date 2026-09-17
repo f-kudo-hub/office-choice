@@ -168,7 +168,10 @@ if (!一覧) {
 出す('## 記事が増えているか')
 出す('')
 try {
-  const 最後 = execSync('git log -1 --format=%cI -- 記事', { encoding: 'utf8' }).trim()
+  // ⚠ 手元の写しではなく GitHub 側を見る。2026-09-17、手元が2日 pull されておらず
+  //   「2日ぶん増えていない」と誤って鳴った（GitHub では毎日増えていた）
+  try { execSync('git fetch -q origin main', { stdio: 'ignore' }) } catch {}
+  const 最後 = execSync('git log -1 --format=%cI origin/main -- 記事', { encoding: 'utf8' }).trim()
   if (!最後) {
     出す('- 記事の履歴が読めませんでした')
     要対応.push('記事が増えているかを確かめられませんでした')
