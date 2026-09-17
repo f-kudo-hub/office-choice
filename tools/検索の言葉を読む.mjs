@@ -12,18 +12,18 @@
  * 順位表を眺めるための道具ではありません。
  *
  * 使い方：
- *   1. 🔗 https://search.google.com/search-console →「検索パフォーマンス」
- *   2. 右上の「エクスポート」→「CSVをダウンロード」（zipで落ちてきます）
- *   3. zipを展開して、中のCSVを丸ごと `データ/` に入れる
- *   4. node tools/検索の言葉を読む.mjs
+ *   node tools/検索の言葉を読む.mjs
  *
- * **ファイル名は気にしなくて大丈夫です。**日本語（クエリ.csv・ページ.csv）でも
- * 英語（Queries.csv・Pages.csv）でも、中の見出しを見て判断します。
+ * **2026-09-17 から Search Console の API で直接読みます**（CSV の書き出しは不要）。
+ * 常務が ga4-reader@…iam.gserviceaccount.com を Search Console のユーザー（制限付き）に足してくださったため。
+ * 鍵は secrets/ga4-service-key.json（GA4 と同じもの）。API が読めない日は、従来どおり データ/ の CSV を探す。
+ * 直近28日（Search Console は3日遅れるので、終わりは3日前）。
  *
  * 出力：00_検索の言葉.md
  */
 
-import { readdirSync, readFileSync, writeFileSync, statSync } from 'node:fs'
+import { readdirSync, readFileSync, writeFileSync, statSync, existsSync } from 'node:fs'
+import { createSign } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 
@@ -97,8 +97,52 @@ try {
 const 語の表 = []   // {語, 表示, click, 順位}
 const 頁の表 = []   // {頁, 表示, click, 順位}
 let 読んだファイル = []
+let 日別 = []       // {日, 表示, click}（API で読めたときだけ）
 
-for (const f of csv一覧) {
+/* ── まず API で読む（2026-09-17〜） ───────────────────────── */
+
+async function apiで読む() {
+  const 鍵の場所 = 'secrets/ga4-service-key.json'
+  if (!existsSync(鍵の場所)) return false
+  const key = JSON.parse(readFileSync(鍵の場所, 'utf8'))
+  const now = Math.floor(Date.now() / 1000)
+  const b64 = o => Buffer.from(JSON.stringify(o)).toString('base64url')
+  const unsigned = b64({ alg: 'RS256', typ: 'JWT' }) + '.' + b64({
+    iss: key.client_email, scope: 'https://www.googleapis.com/auth/webmasters.readonly',
+    aud: 'https://oauth2.googleapis.com/token', iat: now, exp: now + 3600,
+  })
+  const sign = createSign('RSA-SHA256'); sign.update(unsigned)
+  const sig = sign.sign(key.private_key).toString('base64url')
+  const tok = await (await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body: 'grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=' + unsigned + '.' + sig,
+  })).json()
+  if (!tok.access_token) throw new Error('トークンが取れませんでした')
+  const H = { Authorization: 'Bearer ' + tok.access_token, 'content-type': 'application/json' }
+  const site = 'https://soumu-choice.com/'
+  const q = async body => {
+    const r = await fetch('https://www.googleapis.com/webmasters/v3/sites/' + encodeURIComponent(site) + '/searchAnalytics/query', { method: 'POST', headers: H, body: JSON.stringify(body) })
+    if (!r.ok) throw new Error('Search Console API ' + r.status + ': ' + (await r.text()).slice(0, 120))
+    return (await r.json()).rows ?? []
+  }
+  const 日 = n => new Date(Date.now() - n * 864e5).toLocaleDateString('sv-SE', { timeZone: 'Asia/Tokyo' })
+  const 期間 = { startDate: 日(31), endDate: 日(3) }
+  const [語, 頁, 日々] = await Promise.all([
+    q({ ...期間, dimensions: ['query'], rowLimit: 1000 }),
+    q({ ...期間, dimensions: ['page'], rowLimit: 1000 }),
+    q({ ...期間, dimensions: ['date'], rowLimit: 100 }),
+  ])
+  for (const r of 語) 語の表.push({ 語: r.keys[0], 表示: r.impressions, click: r.clicks, 順位: r.position })
+  for (const r of 頁) 頁の表.push({ 頁: r.keys[0], 表示: r.impressions, click: r.clicks, 順位: r.position })
+  日別 = 日々.map(r => ({ 日: r.keys[0], 表示: r.impressions, click: r.clicks })).sort((a, b) => a.日.localeCompare(b.日))
+  読んだファイル.push('Search Console API（' + 期間.startDate + '〜' + 期間.endDate + '）')
+  return true
+}
+
+let apiの失敗 = null
+try { await apiで読む() } catch (e) { apiの失敗 = e.message }
+
+for (const f of (読んだファイル.length ? [] : csv一覧)) {
   const 中身 = readFileSync(join(データ置き場, f), 'utf8').replace(/^﻿/, '')
   const 行 = csvを行に(中身)
   if (行.length < 2) continue
@@ -128,27 +172,40 @@ for (const f of csv一覧) {
 出す('')
 
 if (読んだファイル.length === 0) {
-  出す(`**${今日}｜Search Console の書き出しが、まだ \`データ/\` にありません。**`)
+  出す('**' + 今日 + '｜Search Console を読めませんでした。**')
   出す('')
-  出す('**これは「数字が0」ではありません。「まだ受け取っていない」です。**')
+  出す('**これは「数字が0」ではありません。「読めていない」です。**')
   出す('')
-  出す('1. 🔗 https://search.google.com/search-console →「検索パフォーマンス」')
-  出す('2. 右上の**「エクスポート」→「CSVをダウンロード」**（zipで落ちてきます）')
-  出す('3. zipを展開して、**中のCSVを丸ごと `データ/` に入れる**')
+  if (apiの失敗) 出す('API の失敗：' + apiの失敗)
   出す('')
-  出す('ファイル名は気にしなくて大丈夫です。中の見出しを見て判断します。')
+  出す('読み取り用アカウント ga4-reader@office-choice-ga4-260913.iam.gserviceaccount.com が')
+  出す('Search Console のユーザー（制限付き）に入っているかを 🔗 https://search.google.com/search-console/users?resource_id=https://soumu-choice.com/ で確かめてください。')
+  出す('つなぎとして、CSV を データ/ に置けばそれも読みます。')
   writeFileSync(出力先, 行たち.join('\n') + '\n', 'utf8')
-  console.log('まだCSVがありません（データ/ に置いてください）')
+  console.log('Search Console を読めませんでした' + (apiの失敗 ? '：' + apiの失敗 : ''))
   process.exit(0)
 }
 
-const 合計表示 = 語の表.concat(頁の表).reduce((a, b) => a + (b.表示 ?? 0), 0)
-const 合計click = 語の表.concat(頁の表).reduce((a, b) => a + (b.click ?? 0), 0)
+// API で読んだときは語と頁の両方を足すと二重になるので、頁の表だけで合計する
+const 合計の元 = 日別.length ? 頁の表 : 語の表.concat(頁の表)
+const 合計表示 = 合計の元.reduce((a, b) => a + (b.表示 ?? 0), 0)
+const 合計click = 合計の元.reduce((a, b) => a + (b.click ?? 0), 0)
 
-出す(`**${今日}｜読んだファイル：${読んだファイル.join('・')}**`)
+出す('**' + 今日 + '｜読んだもの：' + 読んだファイル.join('・') + '**')
 出す('')
-出す(`表示 **${合計表示.toLocaleString()}回**／クリック **${合計click.toLocaleString()}回**`)
+出す('表示 **' + 合計表示.toLocaleString() + '回**／クリック **' + 合計click.toLocaleString() + '回**')
 出す('')
+if (日別.length) {
+  // **まだ検索に出ていない段階では、この行がいちばん大事。**増え始めた日が分かる
+  const 週 = 日別.slice(-7).reduce((a, b) => a + b.表示, 0)
+  const 前週 = 日別.slice(-14, -7).reduce((a, b) => a + b.表示, 0)
+  出す('直近7日の表示 **' + 週 + '回**（その前の7日 ' + 前週 + '回）')
+  出す('')
+  出す('<sub>日別の表示：' + 日別.map(d => d.日.slice(5) + ':' + d.表示).join(' ') + '</sub>')
+  出す('')
+  if (合計表示 < 30) 出す('**まだ Google の検索結果にほとんど出ていません。**①②③は数が増えてから効き始めます。いまは記事を増やす段階。')
+  出す('')
+}
 
 /* ① いちばん効くところ：表示はあるのに、クリックが0の語 */
 // **ここが「読まれる前に負けている」場所です。**
