@@ -65,11 +65,30 @@ function 本文HTML(a) {
   return 出.join('\n');
 }
 
-const 記事たち = readdirSync(記事置き場)
+let 記事たち = readdirSync(記事置き場)
   .filter((f) => f.endsWith('.json'))
   .map((f) => JSON.parse(readFileSync(join(記事置き場, f), 'utf8')))
   .filter((a) => a.slug && a.title)
   .sort((a, b) => String(a.published ?? '').localeCompare(String(b.published ?? '')));
+
+// --未公開だけ：note で公開ずみの題を引いて、まだ無いものだけを入れる（2026-09-17）。
+// 同じ記事を2回インポートすると2回入るので、記事が増えるたびに全部入れ直す形は使えない。
+// 題の比べ方は 毎朝の点検.mjs と同じ（記号と空白を落とす）。
+if (process.argv.includes('--未公開だけ')) {
+  const ならす = (t) => String(t ?? '').replace(/[\s　]/g, '').replace(/[（）()「」、。･・]/g, '');
+  const 公開ずみ = new Set();
+  for (let page = 1; page <= 10; page++) {
+    const r = await fetch(`https://note.com/api/v2/creators/officechoice/contents?kind=note&page=${page}`);
+    if (!r.ok) break;
+    const j = await r.json();
+    const 中 = j?.data?.contents ?? [];
+    for (const c of 中) 公開ずみ.add(ならす(c.name));
+    if (j?.data?.isLastPage || 中.length === 0) break;
+  }
+  記事たち = 記事たち.filter((a) => !公開ずみ.has(ならす(a.title)));
+  console.log(`未公開だけ：${記事たち.length}本`);
+  for (const a of 記事たち) console.log('  -', a.published ?? '', a.title);
+}
 
 if (!記事たち.length) {
   console.log('記事がありません。');
