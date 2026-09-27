@@ -323,7 +323,8 @@ if (!noteID) {
     //   差＝まだ外から読めない記事。**外から読めない記事は、無いのと同じ。**
     try {
       const 公開ずみ = new Set()
-      for (let page = 1; page <= 5; page++) {
+      // ⚠ 1ページ6件。5ページで打ち切ると30本を超えた分が「未公開」に見える（2026-09-28、38本公開ずみなのに8本と誤報）
+      for (let page = 1; page <= 100; page++) {
         const rr = await fetch(
           `https://note.com/api/v2/creators/${noteID}/contents?kind=note&page=${page}`,
           { headers: { 'user-agent': 'office-choice-morning-check' } },
