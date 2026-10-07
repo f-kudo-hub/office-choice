@@ -133,6 +133,25 @@ const 記事の形 = {
 const お題 = 引('お題') ?? process.env.TOPIC ?? ''
 if (お題) console.log(`お題の指定：${お題}`)
 
+/**
+ * 見本の記事（2026-10-07〔常務〕「はい、進めて」）。
+ * 過去の記事は「同じ題材を書かないため」にしか渡しておらず、AIは毎回教科書のような書き出しになっていた。
+ * **出来のいい記事を見本として読ませる**と、書き出しと言い回しが人の記事に寄る（Googleの「AIで量産しただけ」対策にもなる）。
+ * 選び方：Search Consoleでクリックがあった記事＋手で書いた記事。設定.json の「見本の記事」（slugの並び）で入れ替えられる。
+ * 渡す量を抑えるため、題名・導入・最初の2節（各1,200字まで）だけ。
+ */
+const 見本のslug = 設定.見本の記事 ?? ['grants-and-subsidies-before-applying', 'amazon-prime-sale-soumu-purchases']
+const 見本を作る = () => 見本のslug
+  .map(slug => join(記事置き場, slug + '.json'))
+  .filter(f => existsSync(f))
+  .map(f => JSON.parse(readFileSync(f, 'utf8')))
+  .map(k => [
+    `■ ${k.title}`,
+    k.lead,
+    ...(k.sections ?? []).slice(0, 2).map(x => `【${x.heading}】\n${String(x.body).slice(0, 1200)}`)
+  ].join('\n\n'))
+  .join('\n\n---\n\n')
+
 const 書きかたのルールを作る = 既存の題名 => `
 あなたは、中小企業の総務が決裁する契約と買いものに詳しい書き手です。
 売り込みではなく、失敗の避け方を書きます。
@@ -146,6 +165,9 @@ ${設定.ジャンル}
 
 【読者】
 ${設定.読者}
+
+【見本の記事（書き出し・言い回し・具体性の手本。題材と文章をそのまま写さない）】
+${見本を作る() || '（見本なし）'}
 
 【すでに書いた記事の題名】
 ${既存の題名}
@@ -177,6 +199,12 @@ ${お題
 `.trim()
 
 // ── 書く ──────────────────────────────────────────────────────────
+// --ルールを見る：AIを呼ばずに、渡す指示（見本の記事を含む）を出して終わる。費用はかからない
+if (process.argv.includes('--ルールを見る')) {
+  console.log(書きかたのルールを作る(読み直す().map(k => `- ${k.title}`).join('\n')))
+  process.exit(0)
+}
+
 const client = new Anthropic()
 
 async function 一本書く(何本目) {

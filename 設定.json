@@ -14,5 +14,9 @@
   "締切アラート_GoogleフォームURL": "https://forms.gle/oC9hVmrxmnGQi6yF6",
   "締切アラート_受付メール": "",
   "月額の価格": 2980,
-  "GA4プロパティID": "552240589"
+  "GA4プロパティID": "552240589",
+  "見本の記事": [
+    "grants-and-subsidies-before-applying",
+    "amazon-prime-sale-soumu-purchases"
+  ]
 }
