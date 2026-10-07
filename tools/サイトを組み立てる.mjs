@@ -610,7 +610,7 @@ function 一覧ページ(補助金の受付中, 間近, 分布) {
   return ページ({
     title: `${サイト名}｜${設定.サイトの説明}`,
     description: 設定.サイトの説明,
-    body: `<h1 class="sr">記事の一覧</h1>\n${補助金への案内(補助金の受付中, 間近, 分布)}\n<section class="kiji" id="kiji"><p class="eyebrow">ARTICLES</p><h2 class="sec-h">契約と買いものを、決裁した側の目線で</h2><ul class="cards">\n${中身}\n</ul></section>`,
+    body: `<h1 class="sr">記事の一覧</h1>\n${補助金への案内(補助金の受付中, 間近, 分布)}\n<section class="kiji" id="kiji"><p class="eyebrow">ARTICLES</p><h2 class="sec-h">止まって初めて気づかれる、<span class="nw">社内インフラの仕事。</span></h2><p class="sec-sub">総務が契約の前に確かめること</p><ul class="cards">\n${中身}\n</ul></section>`,
     root: './',
     canonical: 公開URL ? `${公開URL}/` : '',
     案内を出す: true,
@@ -726,6 +726,8 @@ strong{color:var(--ink)}
 
 /* ── トップ：数字が主役 ─────────────────────────────────── */
 .hero{padding:clamp(1.6rem,4vw,3rem) 0 var(--s4)}
+.nw{white-space:nowrap}
+.sec-sub{margin:-.4rem 0 var(--s3);color:var(--ink-2);font-weight:700}
 .hero h1{margin:.2rem 0 var(--s3);font-size:clamp(1.7rem,4.2vw,2.7rem);line-height:1.3}
 .hero-sub{max-width:44rem;color:var(--ink-2);font-size:clamp(.95rem,1.3vw,1.04rem);margin-bottom:var(--s4)}
 .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--s2);margin:0 0 var(--s4)}
