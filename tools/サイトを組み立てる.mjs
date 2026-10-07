@@ -479,7 +479,7 @@ function 記事ページ(k) {
     <h2>あわせて使えるもの</h2>
     ${関連
       .map(x => `<div class="item">
-  <h3><a href="${e(x.url)}">${e(x.name)}</a></h3>
+  <h3><a href="${e(x.url)}"${/[?&]tag=/.test(x.url) ? ' target="_blank" rel="nofollow sponsored noopener"' : ''}>${e(x.name)}</a></h3>
   <p>${e(x.why ?? '')}</p>
 </div>`)
       .join('')}
