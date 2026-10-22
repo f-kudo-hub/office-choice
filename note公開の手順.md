@@ -10,7 +10,11 @@
 3. 1本ずつ：一覧の「〈題〉を編集」ボタンを JS で押す → 編集画面の本文を JS で読み、**見出し3個以上・リンク1個以上・2,000字以上**を確かめる → `/publish/` へ → ハッシュタグ `#総務` `#中小企業` を入力欄に入れて Enter → 「投稿する」を click → `noteCount` が1増えたかで成否を数える
 4. ⚠ `editor.note.com` は**スクショが拒否される**（Chrome拡張の許可外）が、**JS は通る**。ただし `browser_batch` の中では拒否されるので、editor 側の JS は1回ずつ単独で呼ぶ
 
-⚠ Chrome の note が **kuroyuki_kuro でログインしている**と officechoice の下書きに触れない。切り替え（ログアウト→officechoice でログイン）は工藤さまにお願いする。officechoice は plan.910… のメール＋パスワードのアカウント（Googleボタンからは入れない。押すと「会員登録」に飛ぶ）。
+**2026-10-22〜 officechoice 専用の Chrome プロフィール（Profile officechoice）がある。**拡張機能つき・officechoice でログイン済み。
+`list_connected_browsers` に出る2台のうち、note の current_user が officechoice のほうを `select_browser` で選ぶ（deviceId は変わることがあるので、毎回 current_user で確かめる）。
+**ログインの入れ替えは要らない。**もとの Chrome は kuroyuki_kuro のまま。この日、未公開7本をこの形で公開（noteCount 59→66）。
+
+⚠ （以前）Chrome の note が **kuroyuki_kuro でログインしている**と officechoice の下書きに触れない。切り替え（ログアウト→officechoice でログイン）は工藤さまにお願いする。officechoice は plan.910… のメール＋パスワードのアカウント（Googleボタンからは入れない。押すと「会員登録」に飛ぶ）。
 
 ---
 
